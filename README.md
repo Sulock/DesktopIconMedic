@@ -6,15 +6,16 @@ A portable Windows 11 utility for fixing blank desktop shortcut icons. It suppor
 
 **Free and open-source under [GPL-3.0-only](LICENSE).** Commercial use, modification and paid redistribution are permitted under the GPL's terms.
 
-[Official repository](https://github.com/Sulock/DesktopIconMedic) · [Downloads](https://github.com/Sulock/DesktopIconMedic/releases) · [Report an issue](https://github.com/Sulock/DesktopIconMedic/issues)
+[Official repository](https://github.com/Sulock/DesktopIconMedic) · [Downloads](https://github.com/Sulock/DesktopIconMedic/releases/latest) · [Report an issue](https://github.com/Sulock/DesktopIconMedic/issues)
 
 ![English interface with demo data](assets/screenshot-en.png)
 
 ## Download and run
 
-1. Open [Releases](https://github.com/Sulock/DesktopIconMedic/releases) and download the `DesktopIconMedic-vVERSION-portable.zip` attachment.
+1. Open [Releases](https://github.com/Sulock/DesktopIconMedic/releases/latest) and download the `DesktopIconMedic-vVERSION-portable.zip` attachment.
 2. Extract the ZIP and run `DesktopIconMedic.exe`. Keep `DesktopIconMedic.exe.config` beside it, and close any older running version first.
-3. If no portable release is available yet, build from source using the instructions below. GitHub's **Code → Download ZIP** contains source code, which must be built before use.
+
+To build the app yourself, follow the instructions below. GitHub's **Code → Download ZIP** contains source code, which must be built before use.
 
 Windows 11 includes the required .NET Framework 4.8. No Python or other development environment is needed to run the app. The executable is currently unsigned, so Windows may show an unknown-publisher prompt when checking a download or launch.
 
@@ -92,23 +93,23 @@ The app does not guess where missing programs moved or rewrite network paths, we
 Source files are in `src`. The build uses the Windows .NET Framework C# compiler and downloads no dependencies. From the repository root, run this in Windows PowerShell:
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\build.ps1 -OutputDirectory release-v1.3.1 -Test
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\build.ps1 -OutputDirectory release-v1.3.2 -Test
 ```
 
 The build copies the three READMEs, screenshots and GPL license beside the executable. Use `-Package` to create the portable ZIP, a matching source ZIP and SHA-256 checksums. The portable ZIP also includes the source ZIP:
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\build.ps1 -OutputDirectory release-v1.3.1 -Test -Package
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\build.ps1 -OutputDirectory release-v1.3.2 -Test -Package
 ```
 
-Version 1.3.1 has **32 automated tests**, covering repair and byte-identical restore, preserved launch information, changes after scanning, restore conflicts, altered backups, read-only files, special links, cache boundaries, recovery failures, language selection and persistence, and translated UI state.
+Version 1.3.2 has **33 automated tests**, covering repair and byte-identical restore, preserved launch information, changes after scanning, restore conflicts, altered backups, read-only files, special links, cache boundaries, recovery failures, language selection and persistence, and translated UI state.
 
 Tests use temporary shortcuts and simulated caches under `test-results`. They do not modify actual desktop shortcuts, delete actual icon caches or restart Windows Explorer. The real Explorer stop/restart sequence has not been validated by these tests. Store icon extraction, preserved launch identities and byte-identical restore were previously checked with local copies of ChatGPT and Claude shortcuts.
 
 To render the visible demo windows and save screenshots in all three languages:
 
 ```powershell
-.\release-v1.3.1\Tests.exe .\test-results --visible-preview
+.\release-v1.3.2\Tests.exe .\test-results --visible-preview
 ```
 
 ## License
@@ -127,4 +128,4 @@ Third-party application icons and trademarks remain the property of their respec
 
 Open an [issue](https://github.com/Sulock/DesktopIconMedic/issues) with your Windows version, app version, steps to reproduce, scan results and relevant logs. Remove usernames, private paths and other personal information from logs and screenshots before posting.
 
-Version: **1.3.1**.
+Version: **1.3.2**.

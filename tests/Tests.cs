@@ -29,6 +29,7 @@ internal static class Tests
         // Use our own bundled executable as the icon source. Never mutate a real desktop shortcut.
         exe = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "DesktopIconMedic.exe");
         Check("Executable contains an icon", delegate { Assert(Shell.HasIcon(exe), "Embedded icon missing"); });
+        Check("Preview window uses the application icon when hosted by the test runner", PreviewWindowIcon);
         Check("Missing icon detection, repair, metadata preservation, exact restore", RoundTrip);
         Check("Changed shortcut is not overwritten during repair", ChangedAfterScan);
         Check("Changed shortcut is not overwritten during restore", RestoreConflict);
@@ -300,6 +301,23 @@ internal static class Tests
         Array.Copy(BitConverter.GetBytes(flags), 0, bytes, 20, 4);
         File.WriteAllBytes(path, bytes);
         Assert(new ShortcutService(folder).Inspect(path, "测试").Finding == Finding.Special, "Installer shortcut altered");
+    }
+
+    private static void PreviewWindowIcon()
+    {
+        using (var form = new MainForm(Path.Combine(root, "icon-preview-state"), true))
+        using (var expectedIcon = Icon.ExtractAssociatedIcon(exe))
+        {
+            Assert(form.Icon != null && expectedIcon != null, "Window icon is missing");
+            using (var actual = form.Icon.ToBitmap())
+            using (var expected = expectedIcon.ToBitmap())
+            {
+                Assert(actual.Size == expected.Size, "Window icon has the wrong dimensions");
+                for (int y = 0; y < expected.Height; y++)
+                    for (int x = 0; x < expected.Width; x++)
+                        Assert(actual.GetPixel(x, y) == expected.GetPixel(x, y), "Window shows the test runner icon instead of the application icon");
+            }
+        }
     }
 
     private static void Preview()

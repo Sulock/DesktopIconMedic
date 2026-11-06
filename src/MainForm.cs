@@ -54,7 +54,8 @@ namespace DesktopIconMedic
             MinimumSize = new Size(980, 700);
             AutoScaleDimensions = new SizeF(96F, 96F);
             AutoScaleMode = AutoScaleMode.Dpi;
-            try { Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { }
+            // The preview is hosted by Tests.exe; the icon belongs to this assembly.
+            try { Icon = Icon.ExtractAssociatedIcon(typeof(MainForm).Assembly.Location); } catch { }
             BuildLayout();
             FormClosing += delegate(object sender, FormClosingEventArgs e) {
                 if (busy)

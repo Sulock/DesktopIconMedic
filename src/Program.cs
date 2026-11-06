@@ -13,8 +13,8 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyCompany("Desktop Icon Medic")]
 [assembly: AssemblyCopyright("Copyright (c) 2026 Sulock")]
 [assembly: AssemblyProduct("Desktop Icon Medic")]
-[assembly: AssemblyVersion("1.3.1.0")]
-[assembly: AssemblyFileVersion("1.3.1.0")]
+[assembly: AssemblyVersion("1.3.2.0")]
+[assembly: AssemblyFileVersion("1.3.2.0")]
 
 namespace DesktopIconMedic
 {

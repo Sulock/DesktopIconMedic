@@ -6,13 +6,13 @@
 
 **本项目采用 [GPL-3.0-only](LICENSE) 开源许可证。** 允许依 GPL 条款商业使用、修改和收费再分发。
 
-官方项目：[Sulock/DesktopIconMedic](https://github.com/Sulock/DesktopIconMedic) · [版本下载](https://github.com/Sulock/DesktopIconMedic/releases) · [问题反馈](https://github.com/Sulock/DesktopIconMedic/issues)
+官方项目：[Sulock/DesktopIconMedic](https://github.com/Sulock/DesktopIconMedic) · [版本下载](https://github.com/Sulock/DesktopIconMedic/releases/latest) · [问题反馈](https://github.com/Sulock/DesktopIconMedic/issues)
 
 ![简体中文界面，使用演示数据](assets/screenshot-zh-CN.png)
 
 ## 下载与运行
 
-进入 [Releases](https://github.com/Sulock/DesktopIconMedic/releases)，下载版本附件中的 `DesktopIconMedic-v版本号-portable.zip`，解压后双击 `DesktopIconMedic.exe`。先关闭旧版窗口，并将 EXE 与同目录的 `DesktopIconMedic.exe.config` 放在一起。若尚无已发布的便携版，可按下方“构建与测试”从源码生成程序。
+进入 [Releases](https://github.com/Sulock/DesktopIconMedic/releases/latest)，下载版本附件中的 `DesktopIconMedic-v版本号-portable.zip`，解压后双击 `DesktopIconMedic.exe`。先关闭旧版窗口，并将 EXE 与同目录的 `DesktopIconMedic.exe.config` 放在一起。从源码构建请参阅下方“构建与测试”。
 
 Windows 11 已包含所需的 .NET Framework 4.8；不需要安装 Python 或其他开发环境。GitHub 的“Code → Download ZIP”下载的是源码，需要自行构建。当前程序未做数字签名，Windows 下载或启动检查可能显示发布者未知的提示。
 
@@ -90,13 +90,13 @@ Windows 11 已包含所需的 .NET Framework 4.8；不需要安装 Python 或其
 源代码位于 `src`，使用 Windows 自带的 .NET Framework C# 编译器，无需下载依赖。
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\build.ps1 -OutputDirectory release-v1.3.1 -Test
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\build.ps1 -OutputDirectory release-v1.3.2 -Test
 ```
 
 构建会将三份 README、截图、GPL 许可证复制到输出目录。增加 `-Package` 会生成便携版 ZIP、对应源码 ZIP 和两者的 SHA-256 校验文件；便携版内也包含源码 ZIP：
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\build.ps1 -OutputDirectory release-v1.3.1 -Test -Package
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\build.ps1 -OutputDirectory release-v1.3.2 -Test -Package
 ```
 
 测试使用项目目录内的临时快捷方式和模拟缓存，不会修改真实桌面、清理真实缓存或重启资源管理器。测试覆盖修复与原样恢复、启动信息保留、扫描后变更保护、恢复冲突、备份校验、只读文件、特殊链接、缓存范围及异常后的恢复流程。
@@ -104,7 +104,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\build.ps1 -OutputDirec
 若需核验可见窗口：
 
 ```powershell
-.\release-v1.3.1\Tests.exe .\test-results --visible-preview
+.\release-v1.3.2\Tests.exe .\test-results --visible-preview
 ```
 
 窗口仅显示演示数据，截图写入 `test-results`。深度修复的真实资源管理器终止与重启未在开发期间执行；自动化测试使用替代会话验证相应的处理顺序与失败路径。
@@ -113,7 +113,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\build.ps1 -OutputDirec
 
 1.2 版新增多项勾选、全选/取消全选和批量修复恢复验证，共 25 项自动化测试。
 
-1.3 版新增三种语言切换、语言选择保存、系统语言识别和多语言界面测试，共 32 项自动化测试。
+1.3 版新增三种语言切换、语言选择保存、系统语言识别和多语言界面测试，共 33 项自动化测试。
 
 ## 许可证
 
@@ -131,4 +131,4 @@ Copyright (c) 2026 Sulock。本项目的源代码、文档和原创资源采用 
 
 请在 [Issues](https://github.com/Sulock/DesktopIconMedic/issues) 提供 Windows 版本、软件版本、操作步骤、检查结果和相关日志。提交日志或截图前，请隐藏用户名、私人目录及其他个人信息。
 
-版本：1.3.1。
+版本：1.3.2。
