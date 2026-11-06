@@ -4,7 +4,7 @@
 
 A portable Windows 11 utility for fixing blank desktop shortcut icons. It supports English, Simplified Chinese and Traditional Chinese, with backup and restore. No installation, network access, startup entry or registry changes.
 
-**Free to use; source available. Paid distribution of the original, modified versions or copies bundled with paid products requires the author's written authorization.** Personal use and internal business use are free. See [LICENSE](LICENSE) and its [English translation](LICENSE.en.md).
+**Free and open-source under [GPL-3.0-only](LICENSE).** Commercial use, modification and paid redistribution are permitted under the GPL's terms.
 
 [Official repository](https://github.com/Sulock/DesktopIconMedic) · [Downloads](https://github.com/Sulock/DesktopIconMedic/releases) · [Report an issue](https://github.com/Sulock/DesktopIconMedic/issues)
 
@@ -92,37 +92,39 @@ The app does not guess where missing programs moved or rewrite network paths, we
 Source files are in `src`. The build uses the Windows .NET Framework C# compiler and downloads no dependencies. From the repository root, run this in Windows PowerShell:
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\build.ps1 -OutputDirectory release-v1.3 -Test
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\build.ps1 -OutputDirectory release-v1.3.1 -Test
 ```
 
-The build copies the three READMEs, screenshots, license and English license translation beside the executable. To create the portable ZIP and its SHA-256 checksum as well:
+The build copies the three READMEs, screenshots and GPL license beside the executable. Use `-Package` to create the portable ZIP, a matching source ZIP and SHA-256 checksums. The portable ZIP also includes the source ZIP:
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\build.ps1 -OutputDirectory release-v1.3 -Test -Package
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\build.ps1 -OutputDirectory release-v1.3.1 -Test -Package
 ```
 
-Version 1.3.0 has **32 automated tests**, covering repair and byte-identical restore, preserved launch information, changes after scanning, restore conflicts, altered backups, read-only files, special links, cache boundaries, recovery failures, language selection and persistence, and translated UI state.
+Version 1.3.1 has **32 automated tests**, covering repair and byte-identical restore, preserved launch information, changes after scanning, restore conflicts, altered backups, read-only files, special links, cache boundaries, recovery failures, language selection and persistence, and translated UI state.
 
 Tests use temporary shortcuts and simulated caches under `test-results`. They do not modify actual desktop shortcuts, delete actual icon caches or restart Windows Explorer. The real Explorer stop/restart sequence has not been validated by these tests. Store icon extraction, preserved launch identities and byte-identical restore were previously checked with local copies of ChatGPT and Claude shortcuts.
 
 To render the visible demo windows and save screenshots in all three languages:
 
 ```powershell
-.\release-v1.3\Tests.exe .\test-results --visible-preview
+.\release-v1.3.1\Tests.exe .\test-results --visible-preview
 ```
 
 ## License
 
-Copyright (c) 2026 Sulock. This project uses the custom **DesktopIconMedic Free Use and No Paid Distribution License** and is published as source-available software.
+Copyright (c) 2026 Sulock. DesktopIconMedic's source code, documentation and original project assets are licensed under the **GNU General Public License, version 3 only** (`GPL-3.0-only`). The complete, unmodified license is in [LICENSE](LICENSE).
 
-- Free use, study and modification are permitted, including internal business use.
-- Free redistribution must include the complete license, copyright notice and official project URL. Modified versions must identify their modifier and must not be presented as official releases.
-- Selling the original or modified software, charging for access or downloads, and distributing it in paid products require the author's prior written authorization.
+You may use, modify and redistribute this software, including commercially and for a fee, under the terms of GPL version 3. When distributing the program or a covered derivative work, preserve the required notices, provide the corresponding source in accordance with the GPL, and preserve recipients' GPL rights.
 
-The [Chinese LICENSE](LICENSE) is the governing text. An [English translation](LICENSE.en.md) is provided for reference. Contact the author through the [official project](https://github.com/Sulock/DesktopIconMedic) to discuss separate authorization.
+This program is distributed in the hope that it will be useful, but **without any warranty**, including the implied warranties of merchantability or fitness for a particular purpose. See the GNU General Public License for details.
+
+The portable package includes `DesktopIconMedic-vVERSION-source.zip`, containing the matching source, tests, assets, documentation and build script. Extract that source archive and follow the build instructions above to rebuild the program.
+
+Third-party application icons and trademarks remain the property of their respective rights holders. Windows and .NET Framework components remain subject to their own terms.
 
 ## Report a problem
 
 Open an [issue](https://github.com/Sulock/DesktopIconMedic/issues) with your Windows version, app version, steps to reproduce, scan results and relevant logs. Remove usernames, private paths and other personal information from logs and screenshots before posting.
 
-Version: **1.3.0**.
+Version: **1.3.1**.

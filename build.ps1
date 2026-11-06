@@ -1,4 +1,7 @@
-﻿param([switch]$Test, [string]$OutputDirectory = 'release', [switch]$Package)
+﻿# SPDX-License-Identifier: GPL-3.0-only
+# Copyright (c) 2026 Sulock
+
+param([switch]$Test, [string]$OutputDirectory = 'release', [switch]$Package)
 $ErrorActionPreference = 'Stop'
 Set-Location -LiteralPath $PSScriptRoot
 $compiler = Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe'
@@ -42,7 +45,7 @@ $output = Join-Path (Join-Path $PSScriptRoot $OutputDirectory) 'DesktopIconMedic
 & $compiler '/nologo' '/codepage:65001' '/target:winexe' '/platform:anycpu' '/optimize+' '/warn:4' "/out:$output" '/win32manifest:src\app.manifest' '/win32icon:assets\app.ico' '/r:System.dll' '/r:System.Core.dll' '/r:System.Xml.dll' '/r:Microsoft.CSharp.dll' '/r:System.Drawing.dll' '/r:System.Windows.Forms.dll' '/r:System.Runtime.Serialization.dll' $sources
 if ($LASTEXITCODE -ne 0) { throw 'Application build failed.' }
 Copy-Item -LiteralPath 'src\app.config' -Destination ($output + '.config') -Force
-$documents = @('README.md', 'README.zh-CN.md', 'README.zh-TW.md', 'LICENSE', 'LICENSE.en.md')
+$documents = @('README.md', 'README.zh-CN.md', 'README.zh-TW.md', 'LICENSE')
 foreach ($document in $documents) { Copy-Item -LiteralPath $document -Destination (Join-Path $OutputDirectory $document) -Force }
 $releaseAssets = Join-Path $OutputDirectory 'assets'
 New-Item -ItemType Directory -Path $releaseAssets -Force | Out-Null
@@ -58,13 +61,20 @@ if ($Test) {
 }
 if ($Package) {
     $version = ([version](Get-Item -LiteralPath $output).VersionInfo.FileVersion).ToString(3)
+    $sourceZipName = "DesktopIconMedic-v$version-source.zip"
+    $sourceZipPath = Join-Path $OutputDirectory $sourceZipName
+    $sourceFiles = @('src', 'tests', 'assets', 'build.ps1', '.gitignore') + $documents
+    Compress-Archive -LiteralPath $sourceFiles -DestinationPath $sourceZipPath -Force
     $zipName = "DesktopIconMedic-v$version-portable.zip"
     $zipPath = Join-Path $OutputDirectory $zipName
-    $packageFiles = @($output, ($output + '.config'), $releaseAssets)
+    $packageFiles = @($output, ($output + '.config'), $releaseAssets, $sourceZipPath)
     $packageFiles += @($documents | ForEach-Object { Join-Path $OutputDirectory $_ })
     Compress-Archive -LiteralPath $packageFiles -DestinationPath $zipPath -Force
-    $checksum = (Get-FileHash -LiteralPath $zipPath -Algorithm SHA256).Hash.ToLowerInvariant()
-    ($checksum + '  ' + $zipName) | Set-Content -LiteralPath (Join-Path $OutputDirectory 'SHA256SUMS.txt') -Encoding Ascii
+    $checksums = foreach ($archive in @($zipPath, $sourceZipPath)) {
+        (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant() + '  ' + [IO.Path]::GetFileName($archive)
+    }
+    $checksums | Set-Content -LiteralPath (Join-Path $OutputDirectory 'SHA256SUMS.txt') -Encoding Ascii
+    Write-Output "Source: $sourceZipPath"
     Write-Output "Packaged: $zipPath"
 }
 Write-Output "Built: $output"

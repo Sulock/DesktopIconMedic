@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (c) 2026 Sulock
+
 using System;
 using System.IO;
 using System.Threading;
@@ -8,9 +11,10 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle("Desktop Icon Medic")]
 [assembly: AssemblyDescription("Windows desktop shortcut and icon cache repair")]
 [assembly: AssemblyCompany("Desktop Icon Medic")]
+[assembly: AssemblyCopyright("Copyright (c) 2026 Sulock")]
 [assembly: AssemblyProduct("Desktop Icon Medic")]
-[assembly: AssemblyVersion("1.3.0.0")]
-[assembly: AssemblyFileVersion("1.3.0.0")]
+[assembly: AssemblyVersion("1.3.1.0")]
+[assembly: AssemblyFileVersion("1.3.1.0")]
 
 namespace DesktopIconMedic
 {

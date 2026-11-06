@@ -4,7 +4,7 @@
 
 一个为 Windows 11 制作的桌面工具，支持简体中文、繁体中文和英文，用于处理桌面快捷方式变成白纸图标的问题。免安装，无联网功能，不添加开机启动，不修改注册表。
 
-**免费使用，源码公开。未经作者书面授权，禁止收费分发原版、修改版或将其捆绑到付费产品中分发。** 个人和企业内部使用均免费，具体权限见 [LICENSE](LICENSE)。
+**本项目采用 [GPL-3.0-only](LICENSE) 开源许可证。** 允许依 GPL 条款商业使用、修改和收费再分发。
 
 官方项目：[Sulock/DesktopIconMedic](https://github.com/Sulock/DesktopIconMedic) · [版本下载](https://github.com/Sulock/DesktopIconMedic/releases) · [问题反馈](https://github.com/Sulock/DesktopIconMedic/issues)
 
@@ -90,13 +90,13 @@ Windows 11 已包含所需的 .NET Framework 4.8；不需要安装 Python 或其
 源代码位于 `src`，使用 Windows 自带的 .NET Framework C# 编译器，无需下载依赖。
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\build.ps1 -OutputDirectory release-v1.3 -Test
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\build.ps1 -OutputDirectory release-v1.3.1 -Test
 ```
 
-构建会将三份 README、截图、许可证及英文译文复制到输出目录。若还需生成便携版 ZIP 和 SHA-256 校验文件，执行：
+构建会将三份 README、截图、GPL 许可证复制到输出目录。增加 `-Package` 会生成便携版 ZIP、对应源码 ZIP 和两者的 SHA-256 校验文件；便携版内也包含源码 ZIP：
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\build.ps1 -OutputDirectory release-v1.3 -Test -Package
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\build.ps1 -OutputDirectory release-v1.3.1 -Test -Package
 ```
 
 测试使用项目目录内的临时快捷方式和模拟缓存，不会修改真实桌面、清理真实缓存或重启资源管理器。测试覆盖修复与原样恢复、启动信息保留、扫描后变更保护、恢复冲突、备份校验、只读文件、特殊链接、缓存范围及异常后的恢复流程。
@@ -104,7 +104,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\build.ps1 -OutputDirec
 若需核验可见窗口：
 
 ```powershell
-.\release-v1.3\Tests.exe .\test-results --visible-preview
+.\release-v1.3.1\Tests.exe .\test-results --visible-preview
 ```
 
 窗口仅显示演示数据，截图写入 `test-results`。深度修复的真实资源管理器终止与重启未在开发期间执行；自动化测试使用替代会话验证相应的处理顺序与失败路径。
@@ -115,18 +115,20 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\build.ps1 -OutputDirec
 
 1.3 版新增三种语言切换、语言选择保存、系统语言识别和多语言界面测试，共 32 项自动化测试。
 
-## 许可与免费分发
+## 许可证
 
-Copyright (c) 2026 Sulock。本项目使用自定义的[免费使用与禁止收费分发许可协议](LICENSE)，以源码公开（source-available）方式发布。
+Copyright (c) 2026 Sulock。本项目的源代码、文档和原创资源采用 **GNU 通用公共许可证第 3 版，仅限该版本**（`GPL-3.0-only`）。未经改动的许可证完整正文见 [LICENSE](LICENSE)。
 
-- 允许免费使用、学习和修改，也允许个人及企业内部使用。
-- 免费分享原版或修改版时，须附带完整 LICENSE，保留版权声明和官方项目地址；修改版须说明修改者。
-- 未经作者书面授权，禁止销售原版或修改版、设置付费下载或会员门槛，以及捆绑到付费产品中分发。
+你可以依照 GPL 第 3 版使用、修改和再分发本软件，包括商业使用和收费分发。分发本程序或受 GPL 约束的衍生作品时，须保留规定的声明、按 GPL 提供对应源码，并保留接收者享有的 GPL 权利。
 
-完整授权条件以中文 LICENSE 为准，同时提供 [English translation](LICENSE.en.md)。需要其他授权时，请通过[官方项目页面](https://github.com/Sulock/DesktopIconMedic)联系作者。
+本软件希望能够对你有所帮助，但**不提供任何担保**，包括适销性或特定用途适用性的默示担保。具体条款请参阅 GNU 通用公共许可证。
+
+便携包内附有 `DesktopIconMedic-v版本号-source.zip`，包含该版本对应的源码、测试、资源、文档及构建脚本。解压源码包后，可按上方构建说明重新生成程序。
+
+第三方应用图标和商标仍属于各自权利人；Windows 和 .NET Framework 组件继续适用各自的条款。
 
 ## 问题反馈
 
 请在 [Issues](https://github.com/Sulock/DesktopIconMedic/issues) 提供 Windows 版本、软件版本、操作步骤、检查结果和相关日志。提交日志或截图前，请隐藏用户名、私人目录及其他个人信息。
 
-版本：1.3.0。
+版本：1.3.1。
