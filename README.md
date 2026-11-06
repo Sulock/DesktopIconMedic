@@ -1,111 +1,128 @@
-# DesktopIconMedic · 桌面图标修复助手
+# DesktopIconMedic
 
-一个为 Windows 11 制作的中文桌面工具，用于处理桌面快捷方式变成白纸图标的问题。免安装，无联网功能，不添加开机启动，不修改注册表。
+**English** | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md)
 
-**免费使用，源码公开。未经作者书面授权，禁止收费分发原版、修改版或将其捆绑到付费产品中分发。** 个人和企业内部使用均免费，具体权限见 [LICENSE](LICENSE)。
+A portable Windows 11 utility for fixing blank desktop shortcut icons. It supports English, Simplified Chinese and Traditional Chinese, with backup and restore. No installation, network access, startup entry or registry changes.
 
-官方项目：[Sulock/DesktopIconMedic](https://github.com/Sulock/DesktopIconMedic) · [版本下载](https://github.com/Sulock/DesktopIconMedic/releases) · [问题反馈](https://github.com/Sulock/DesktopIconMedic/issues)
+**Free to use; source available. Paid distribution of the original, modified versions or copies bundled with paid products requires the author's written authorization.** Personal use and internal business use are free. See [LICENSE](LICENSE) and its [English translation](LICENSE.en.md).
 
-## 下载与运行
+[Official repository](https://github.com/Sulock/DesktopIconMedic) · [Downloads](https://github.com/Sulock/DesktopIconMedic/releases) · [Report an issue](https://github.com/Sulock/DesktopIconMedic/issues)
 
-进入 [Releases](https://github.com/Sulock/DesktopIconMedic/releases)，下载版本附件中的 `DesktopIconMedic-v版本号-portable.zip`，解压后双击 `DesktopIconMedic.exe`。先关闭旧版窗口，并将 EXE 与同目录的 `DesktopIconMedic.exe.config` 放在一起。若尚无已发布的便携版，可按下方“构建与测试”从源码生成程序。
+![English interface with demo data](assets/screenshot-en.png)
 
-Windows 11 已包含所需的 .NET Framework 4.8；不需要安装 Python 或其他开发环境。GitHub 的“Code → Download ZIP”下载的是源码，需要自行构建。当前程序未做数字签名，Windows 下载或启动检查可能显示发布者未知的提示。
+## Download and run
 
-软件启动后只检查桌面快捷方式，不会自动修改快捷方式、清理缓存或重启桌面。普通操作无需管理员权限。
+1. Open [Releases](https://github.com/Sulock/DesktopIconMedic/releases) and download the `DesktopIconMedic-vVERSION-portable.zip` attachment.
+2. Extract the ZIP and run `DesktopIconMedic.exe`. Keep `DesktopIconMedic.exe.config` beside it, and close any older running version first.
+3. If no portable release is available yet, build from source using the instructions below. GitHub's **Code → Download ZIP** contains source code, which must be built before use.
 
-## 建议使用顺序
+Windows 11 includes the required .NET Framework 4.8. No Python or other development environment is needed to run the app. The executable is currently unsigned, so Windows may show an unknown-publisher prompt when checking a download or launch.
 
-1. **检查桌面**：启动时自动扫描个人桌面和公共桌面的 `.lnk` / `.url` 文件。
-2. **刷新图标**：如果目标路径正常但仍显示白纸，先点击“刷新图标”，等待片刻并观察桌面。
-3. **修复图标来源**：若列表显示“图标来源失效”，勾选项目后点击“修复勾选项”。工具会先备份，再将图标来源改为目标 EXE 的内置图标。
-4. **重建图标缓存**：刷新无效时使用。确认提示后，工具会暂时关闭当前会话的资源管理器，备份并移除图标缓存，随后恢复桌面，由 Windows 重新生成缓存。
-5. **商店应用仍显示白纸**：ChatGPT、Claude 等商店应用可能没有普通 EXE 目标路径。1.1 版会将有可用原图标的项目标记为“可固定商店图标”。仅勾选实际显示异常的项目并点击“修复勾选项”，工具会从当前安装包提取原图标，保存为稳定的本地图标文件，保留原应用启动标识。此步骤不需要重启桌面。
+At startup, the app scans desktop shortcuts. Repairs and cache rebuilding require a separate action. Ordinary operations do not require administrator permission.
 
-重建缓存时，桌面和任务栏会短暂消失，文件夹窗口可能关闭。操作前请结束文件复制 / 移动并保存正在编辑的内容。工具不会自动重启电脑。部分缓存被占用时会保留并记录原因；必要时可手动重启电脑后再试。
+## Choose a language
 
-若自动恢复桌面失败，按 **Ctrl + Shift + Esc** 打开任务管理器，选择“运行新任务”，输入 `explorer.exe`。
+Use the **Language** dropdown at the bottom of the sidebar to select **English**, **简体中文** or **繁體中文**. The interface changes immediately and keeps the current filter, checked shortcuts and focused row.
 
-## 检查结果的含义
+On first launch, the app follows the Windows display language: Simplified Chinese for Simplified Chinese systems, Traditional Chinese for Traditional Chinese systems, and English for other languages. Your manual choice is saved in `%LOCALAPPDATA%\DesktopIconMedic\settings.json` and restored on the next launch.
 
-1.2 版在每行前显示勾选方框。可以同时勾选多个可修复项目，按钮会显示数量，例如“修复勾选项 (3)”，点击后批量备份和修复。也可以使用“全选可修复项”或“取消全选”。全选仅作用于当前列表中支持自动修复的项目；灰色方框表示暂不支持自动修复，选中该行可查看原因。重新扫描或切换筛选条件会清空勾选，请确认后重新选择。
+Existing log entries keep the language used when they were recorded. New entries use the selected language. Windows file dialogs, standard message buttons and operating-system error messages may use the Windows language.
 
-| 结果 | 含义与建议 |
+## Suggested repair order
+
+1. **Check desktop:** scan `.lnk` and `.url` files on your personal and public desktops.
+2. **Refresh icons:** if the paths look valid but an icon is blank, request a refresh and wait a moment.
+3. **Repair icon sources:** select shortcuts marked **Icon source missing**, then click **Repair selected**. The app backs up each shortcut and uses the target executable's embedded icon.
+4. **Rebuild the icon cache:** if refreshing does not help, confirm the cache-rebuild prompt. The app temporarily closes Windows Explorer in the current session, backs up and removes icon caches, then restores the desktop so Windows can rebuild them.
+5. **Pin a Store app icon:** Store apps such as ChatGPT and Claude may not have an ordinary executable target. If a shortcut is marked **Store icon can be pinned** and its icon looks wrong, select it and click **Repair selected**. The app extracts the installed app's icon into a stable local file while preserving its launch identity. This action does not restart the desktop.
+
+Cache rebuilding briefly hides the desktop and taskbar and may close folder windows. Finish file copies or moves and save your work first. The app does not restart Windows automatically. Cache files that remain locked are kept and reported in the log.
+
+If the desktop does not return automatically, press **Ctrl + Shift + Esc**, choose **Run new task** in Task Manager, and enter `explorer.exe`.
+
+## Understand scan results
+
+Check multiple rows to repair them together. **Select repairable** selects only supported shortcuts in the current list; **Clear selection** clears them. Gray checkboxes indicate unsupported items. Select a row to see why, or double-click it for full paths. Rescanning or changing the filter clears the selection; changing the interface language preserves it.
+
+| Status | Meaning and suggested action |
 | --- | --- |
-| 路径正常 | 没有发现缺失的目标或图标文件。仍可能存在缓存、图标资源索引或文件内容问题，可先刷新。 |
-| 图标来源失效 | 图标文件缺失，且目标程序含有可用图标。可勾选修复。 |
-| 可固定商店图标 | 已确认商店应用的本地图标来源。如仍显示白纸，可勾选修复；该状态本身不代表图标已损坏。 |
-| 目标不可用 | 软件可能被移动、卸载，或磁盘 / 云文件当前不可用。请检查安装情况并重新创建快捷方式。 |
-| 特殊快捷方式 | 系统、无法读取图标的商店应用、安装器管理、网页、游戏启动链接或相对图标路径等，不自动改写。 |
-| 需联网检查 | 路径位于网络共享或网络驱动器，本工具跳过检查。 |
-| 无法读取 | 文件损坏、权限不足，或含重解析点 / 云同步占位符等。双击查看原因。 |
+| Paths valid | No missing target or icon file was found. Cache, resource-index or file-content problems may still affect the icon; try refreshing it. |
+| Icon source missing | The icon file is missing and the target executable has an icon available for repair. |
+| Store icon can be pinned | An installed Store app icon is available. Select the shortcut if its displayed icon looks wrong; this status alone does not mean it is broken. |
+| Target unavailable | The app may have moved or been uninstalled, or its drive or cloud file may be unavailable. Check the installation and recreate the shortcut. |
+| Special shortcut | A system, installer-managed, web, game, relative-icon-path or unsupported Store link. These are not rewritten automatically. |
+| Network path skipped | The shortcut, target or icon is on a network share or network drive and was not accessed. |
+| Cannot read | The file may be corrupt, inaccessible, a reparse point or a cloud placeholder. Open its details for the reported reason. |
 
-“检查桌面”检查的是文件路径，不能自动识别屏幕上哪些图标显示成白纸，也不能保证修复所有原因。桌面的回收站、此电脑等虚拟图标不在快捷方式列表中，但可尝试图标刷新和缓存重建。
+The scan checks file paths, not the appearance of icons on screen. Virtual desktop items such as Recycle Bin and This PC are not listed as shortcuts; icon refresh and cache rebuilding can still be tried.
 
-公共桌面的快捷方式可能需要管理员权限才可修改；如明确需要修复公共桌面，可右键本程序选择“以管理员身份运行”。不要使用另一位用户的账户运行，否则会检查那位用户的桌面与缓存。
+Modifying public desktop shortcuts may require **Run as administrator**. Use the same Windows account: running as another user scans that user's desktop and cache.
 
-## 备份与恢复
+## Backups and local data
 
-数据仅保存在本机：
+All application data stays on your computer:
 
 ```text
 %LOCALAPPDATA%\DesktopIconMedic\
-  Backups\shortcuts_时间_编号\   原快捷方式和校验清单
-  Backups\cache_时间_编号\       已移除缓存的备份和原路径记录
-  Logs\日期.log                  操作日志
-  Icons\应用标识_内容校验值.ico   商店应用修复后的图标文件
+  settings.json                  Saved interface language
+  Backups\shortcuts_TIME_ID\     Original shortcuts and verification manifest
+  Backups\cache_TIME_ID\         Removed cache files and original paths
+  Logs\DATE.log                  Activity logs
+  Icons\APP_ID_CONTENT_HASH.ico  Pinned Store app icons
 ```
 
-- 点击“恢复快捷方式备份”，选择一次修复记录，可以恢复原快捷方式。
-- 备份采用 SHA-256 校验。如果备份被改动，或当前快捷方式在修复后又被修改 / 删除，工具会跳过恢复，避免覆盖用户的新更改。
-- 单个快捷方式写入或验证失败时会尝试回退；如果权限阻止回退，原文件仍保存在备份目录，日志会说明。
-- 缓存备份仅供人工排查，不会自动恢复，以免重新引入损坏的缓存。
-- **请保留 Icons 文件夹**：商店应用修复后的快捷方式会引用这里的图标。更新或移动本工具的 EXE 不影响这些图标；删除 Icons 文件夹会使图标再次失效。应用改换品牌图标后，本地固定图标不会自动更新。
-- 备份不会自动删除。无需保留时可通过“打开备份与日志”自行整理。
-- 日志可能包含本机文件路径。分享给他人前请检查其中的个人信息。
+- Use **Restore shortcuts** to choose a repair session and restore the original shortcut files.
+- Backups are checked with SHA-256. Restore skips altered backups and shortcuts changed or deleted after repair.
+- If writing or verifying a shortcut fails, the app attempts to roll it back. If permissions prevent rollback, the original remains in the backup folder and the log records the failure.
+- Cache backups are for manual troubleshooting and are not restored automatically.
+- **Keep the `Icons` folder.** Pinned Store shortcuts refer to these files. Moving or updating this utility does not affect them, but deleting that folder breaks the icon references. Pinned icons do not automatically change when an app changes its branding.
+- Backups are not deleted automatically. Use **Backups and logs** to review them.
+- Logs may contain local file paths. Remove personal information before sharing them.
 
-## 修复范围
+## Repair scope
 
-缓存操作只允许当前账户的 `%LOCALAPPDATA%\IconCache.db` 以及 `%LOCALAPPDATA%\Microsoft\Windows\Explorer\iconcache*.db` 中匹配的图标数据库。不处理缩略图缓存，不递归清理文件夹，不删除桌面文件。
+Cache operations are restricted to the current account's `%LOCALAPPDATA%\IconCache.db` and matching `iconcache*.db` files directly inside `%LOCALAPPDATA%\Microsoft\Windows\Explorer`. Thumbnail caches, desktop files and nested directories are not cleaned.
 
-普通快捷方式修复只更新明确失效的图标来源；商店应用可选择固定已安装的原图标。修复会校验启动目标、启动参数、工作目录、描述及原始 Shell 启动标识是否保持不变。不会猜测丢失的程序位置，不改写网络路径、无法确认图标来源的特殊链接、网页链接或 Windows Installer 管理的快捷方式。
+Ordinary shortcut repair updates a confirmed missing icon source. Store shortcuts can use a pinned copy of their installed icon. Repairs verify that launch targets, arguments, working directories, descriptions and original Shell launch identities remain unchanged.
 
-如果经常复发，可检查清理工具是否删除缓存、软件更新是否改变图标路径，以及桌面同步软件是否重新覆盖快捷方式。此工具负责修复症状与部分路径问题，不会阻止外部软件再次修改文件。
+The app does not guess where missing programs moved or rewrite network paths, web links, Windows Installer shortcuts or special links without a confirmed icon source. Repeated failures may come from cleanup utilities deleting caches, app updates changing paths or desktop-sync software restoring old shortcuts.
 
-## 构建与测试
+## Build and test
 
-源代码位于 `src`，使用 Windows 自带的 .NET Framework C# 编译器，无需下载依赖。
+Source files are in `src`. The build uses the Windows .NET Framework C# compiler and downloads no dependencies. From the repository root, run this in Windows PowerShell:
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\build.ps1 -OutputDirectory release-v1.2 -Test
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\build.ps1 -OutputDirectory release-v1.3 -Test
 ```
 
-测试使用项目目录内的临时快捷方式和模拟缓存，不会修改真实桌面、清理真实缓存或重启资源管理器。测试覆盖修复与原样恢复、启动信息保留、扫描后变更保护、恢复冲突、备份校验、只读文件、特殊链接、缓存范围及异常后的恢复流程。
-
-若需核验可见窗口：
+The build copies the three READMEs, screenshots, license and English license translation beside the executable. To create the portable ZIP and its SHA-256 checksum as well:
 
 ```powershell
-.\release-v1.2\Tests.exe .\test-results --visible-preview
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\build.ps1 -OutputDirectory release-v1.3 -Test -Package
 ```
 
-窗口仅显示演示数据，截图写入 `test-results`。深度修复的真实资源管理器终止与重启未在开发期间执行；自动化测试使用替代会话验证相应的处理顺序与失败路径。
+Version 1.3.0 has **32 automated tests**, covering repair and byte-identical restore, preserved launch information, changes after scanning, restore conflicts, altered backups, read-only files, special links, cache boundaries, recovery failures, language selection and persistence, and translated UI state.
 
-1.1 版通过 23 项自动化测试，并使用本机 ChatGPT 和 Claude 快捷方式的副本验证：图标提取、修复、启动标识保留、Windows 图标读取，以及备份的逐字节恢复。
+Tests use temporary shortcuts and simulated caches under `test-results`. They do not modify actual desktop shortcuts, delete actual icon caches or restart Windows Explorer. The real Explorer stop/restart sequence has not been validated by these tests. Store icon extraction, preserved launch identities and byte-identical restore were previously checked with local copies of ChatGPT and Claude shortcuts.
 
-1.2 版新增多项勾选、全选/取消全选和批量修复恢复验证，共 25 项自动化测试。
+To render the visible demo windows and save screenshots in all three languages:
 
-## 许可与免费分发
+```powershell
+.\release-v1.3\Tests.exe .\test-results --visible-preview
+```
 
-Copyright (c) 2026 Sulock。本项目使用自定义的[免费使用与禁止收费分发许可协议](LICENSE)，以源码公开（source-available）方式发布。
+## License
 
-- 允许免费使用、学习和修改，也允许个人及企业内部使用。
-- 免费分享原版或修改版时，须附带完整 LICENSE，保留版权声明和官方项目地址；修改版须说明修改者。
-- 未经作者书面授权，禁止销售原版或修改版、设置付费下载或会员门槛，以及捆绑到付费产品中分发。
+Copyright (c) 2026 Sulock. This project uses the custom **DesktopIconMedic Free Use and No Paid Distribution License** and is published as source-available software.
 
-完整授权条件以 LICENSE 为准。需要其他授权时，请通过[官方项目页面](https://github.com/Sulock/DesktopIconMedic)联系作者。
+- Free use, study and modification are permitted, including internal business use.
+- Free redistribution must include the complete license, copyright notice and official project URL. Modified versions must identify their modifier and must not be presented as official releases.
+- Selling the original or modified software, charging for access or downloads, and distributing it in paid products require the author's prior written authorization.
 
-## 问题反馈
+The [Chinese LICENSE](LICENSE) is the governing text. An [English translation](LICENSE.en.md) is provided for reference. Contact the author through the [official project](https://github.com/Sulock/DesktopIconMedic) to discuss separate authorization.
 
-请在 [Issues](https://github.com/Sulock/DesktopIconMedic/issues) 提供 Windows 版本、软件版本、操作步骤、检查结果和相关日志。提交日志或截图前，请隐藏用户名、私人目录及其他个人信息。
+## Report a problem
 
-版本：1.2.0。
+Open an [issue](https://github.com/Sulock/DesktopIconMedic/issues) with your Windows version, app version, steps to reproduce, scan results and relevant logs. Remove usernames, private paths and other personal information from logs and screenshots before posting.
+
+Version: **1.3.0**.

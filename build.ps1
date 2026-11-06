@@ -1,4 +1,4 @@
-param([switch]$Test, [string]$OutputDirectory = 'release')
+﻿param([switch]$Test, [string]$OutputDirectory = 'release', [switch]$Package)
 $ErrorActionPreference = 'Stop'
 Set-Location -LiteralPath $PSScriptRoot
 $compiler = Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe'
@@ -39,16 +39,32 @@ $writer.Dispose(); $imageStream.Dispose(); $graphics.Dispose(); $bitmap.Dispose(
 
 $sources = @(Get-ChildItem -LiteralPath 'src' -Filter '*.cs' | ForEach-Object { $_.FullName })
 $output = Join-Path (Join-Path $PSScriptRoot $OutputDirectory) 'DesktopIconMedic.exe'
-& $compiler '/nologo' '/target:winexe' '/platform:anycpu' '/optimize+' '/warn:4' "/out:$output" '/win32manifest:src\app.manifest' '/win32icon:assets\app.ico' '/r:System.dll' '/r:System.Core.dll' '/r:System.Xml.dll' '/r:Microsoft.CSharp.dll' '/r:System.Drawing.dll' '/r:System.Windows.Forms.dll' '/r:System.Runtime.Serialization.dll' $sources
+& $compiler '/nologo' '/codepage:65001' '/target:winexe' '/platform:anycpu' '/optimize+' '/warn:4' "/out:$output" '/win32manifest:src\app.manifest' '/win32icon:assets\app.ico' '/r:System.dll' '/r:System.Core.dll' '/r:System.Xml.dll' '/r:Microsoft.CSharp.dll' '/r:System.Drawing.dll' '/r:System.Windows.Forms.dll' '/r:System.Runtime.Serialization.dll' $sources
 if ($LASTEXITCODE -ne 0) { throw 'Application build failed.' }
 Copy-Item -LiteralPath 'src\app.config' -Destination ($output + '.config') -Force
-if (Test-Path -LiteralPath 'README.md') { Copy-Item -LiteralPath 'README.md' -Destination (Join-Path $OutputDirectory 'README.md') -Force }
-Copy-Item -LiteralPath 'LICENSE' -Destination (Join-Path $OutputDirectory 'LICENSE') -Force
+$documents = @('README.md', 'README.zh-CN.md', 'README.zh-TW.md', 'LICENSE', 'LICENSE.en.md')
+foreach ($document in $documents) { Copy-Item -LiteralPath $document -Destination (Join-Path $OutputDirectory $document) -Force }
+$releaseAssets = Join-Path $OutputDirectory 'assets'
+New-Item -ItemType Directory -Path $releaseAssets -Force | Out-Null
+foreach ($screenshot in @('screenshot-en.png', 'screenshot-zh-CN.png', 'screenshot-zh-TW.png')) {
+    Copy-Item -LiteralPath (Join-Path 'assets' $screenshot) -Destination (Join-Path $releaseAssets $screenshot) -Force
+}
 if ($Test) {
     $testOutput = Join-Path (Join-Path $PSScriptRoot $OutputDirectory) 'Tests.exe'
-    & $compiler '/nologo' '/target:exe' '/platform:anycpu' '/optimize+' '/warn:4' "/out:$testOutput" '/r:System.dll' '/r:System.Core.dll' '/r:System.Drawing.dll' '/r:System.Windows.Forms.dll' '/r:System.Runtime.Serialization.dll' "/r:$output" 'tests\Tests.cs'
+    & $compiler '/nologo' '/codepage:65001' '/target:exe' '/platform:anycpu' '/optimize+' '/warn:4' "/out:$testOutput" '/r:System.dll' '/r:System.Core.dll' '/r:System.Drawing.dll' '/r:System.Windows.Forms.dll' '/r:System.Runtime.Serialization.dll' "/r:$output" 'tests\Tests.cs'
     if ($LASTEXITCODE -ne 0) { throw 'Test build failed.' }
     & $testOutput (Join-Path $PSScriptRoot 'test-results')
     if ($LASTEXITCODE -ne 0) { throw 'Tests failed.' }
+}
+if ($Package) {
+    $version = ([version](Get-Item -LiteralPath $output).VersionInfo.FileVersion).ToString(3)
+    $zipName = "DesktopIconMedic-v$version-portable.zip"
+    $zipPath = Join-Path $OutputDirectory $zipName
+    $packageFiles = @($output, ($output + '.config'), $releaseAssets)
+    $packageFiles += @($documents | ForEach-Object { Join-Path $OutputDirectory $_ })
+    Compress-Archive -LiteralPath $packageFiles -DestinationPath $zipPath -Force
+    $checksum = (Get-FileHash -LiteralPath $zipPath -Algorithm SHA256).Hash.ToLowerInvariant()
+    ($checksum + '  ' + $zipName) | Set-Content -LiteralPath (Join-Path $OutputDirectory 'SHA256SUMS.txt') -Encoding Ascii
+    Write-Output "Packaged: $zipPath"
 }
 Write-Output "Built: $output"

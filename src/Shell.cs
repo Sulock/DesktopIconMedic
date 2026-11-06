@@ -85,7 +85,7 @@ namespace DesktopIconMedic
                     try
                     {
                         uint size = ILGetSize(pidl);
-                        if (size > 1024 * 1024) throw new IOException("快捷方式的启动标识异常。");
+                        if (size > 1024 * 1024) throw new IOException(UiText.Get("error.linkIdentity"));
                         byte[] bytes = new byte[size];
                         Marshal.Copy(pidl, bytes, 0, bytes.Length);
                         data.IdList = Convert.ToBase64String(bytes);

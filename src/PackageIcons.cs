@@ -97,8 +97,8 @@ namespace DesktopIconMedic
 
         public static string SaveStableIcon(string appId, string pngPath, string stateRoot)
         {
-            if (AppIdFromParsingPath(appId) != appId) throw new IOException("商店应用标识无效。");
-            if (Paths.IsRemote(pngPath)) throw new IOException("不从网络路径读取图标。");
+            if (AppIdFromParsingPath(appId) != appId) throw new IOException(UiText.Get("error.appId"));
+            if (Paths.IsRemote(pngPath)) throw new IOException(UiText.Get("error.networkIcon"));
             Paths.RejectReparsePoints(pngPath);
             string folder = Path.Combine(stateRoot, "Icons");
             Paths.RejectReparsePoints(folder);
@@ -108,7 +108,7 @@ namespace DesktopIconMedic
             if (File.Exists(path) && Shell.HasIcon(path)) return path;
             string temp = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
             WriteIco(pngPath, temp);
-            if (!Shell.HasIcon(temp)) { File.Delete(temp); throw new IOException("生成的图标未通过 Windows 读取校验。"); }
+            if (!Shell.HasIcon(temp)) { File.Delete(temp); throw new IOException(UiText.Get("error.generatedIcon")); }
             if (File.Exists(path)) File.Replace(temp, path, null); else File.Move(temp, path);
             return path;
         }

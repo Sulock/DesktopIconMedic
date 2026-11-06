@@ -32,6 +32,9 @@ namespace DesktopIconMedic
         private CheckBox problemsOnly, selectAll;
         private bool updatingChecks;
         private ProgressBar progress;
+        private ComboBox languageSelector;
+        private bool changingLanguage;
+        private string statusKey = "operation.ready";
 
         public MainForm(string stateRoot, bool preview)
         {
@@ -39,7 +42,7 @@ namespace DesktopIconMedic
             this.preview = preview;
             shortcuts = new ShortcutService(stateRoot);
             cache = new CacheService(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), stateRoot);
-            Text = "桌面图标修复助手 1.2";
+            Text = UiText.Get("app.window");
             Font = new Font("Microsoft YaHei UI", 9F);
             BackColor = Color.FromArgb(246, 248, 252);
             ForeColor = Ink;
@@ -54,7 +57,7 @@ namespace DesktopIconMedic
                 if (busy)
                 {
                     e.Cancel = true;
-                    MessageBox.Show(this, "当前操作正在进行，请等待完成后再关闭。", Text, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show(this, UiText.Get("app.waitClose"), Text, MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             };
             if (!preview) Shown += delegate { Scan(); };
@@ -81,27 +84,36 @@ namespace DesktopIconMedic
             root.Controls.Add(sidebar, 0, 0);
             var brand = new Label { Text = "◈", Font = new Font("Segoe UI", 34), ForeColor = Color.FromArgb(131, 174, 255), Location = new Point(23, 20), Size = new Size(90, 65) };
             sidebar.Controls.Add(brand);
-            sidebar.Controls.Add(LabelAt("图标修复助手", 24, 92, 178, 30, 17, Color.White, true));
-            sidebar.Controls.Add(LabelAt("DESKTOP ICON MEDIC", 25, 131, 175, 22, 8, Color.FromArgb(157, 177, 204), false));
-            sidebar.Controls.Add(LabelAt("Windows 11  /  免安装", 25, 160, 180, 24, 9, Color.FromArgb(157, 177, 204), false));
+            sidebar.Controls.Add(LabelAt("sidebar.brand", 24, 92, 178, 30, 17, Color.White, true));
+            sidebar.Controls.Add(LabelAt("sidebar.englishBrand", 25, 131, 175, 22, 8, Color.FromArgb(157, 177, 204), false));
+            sidebar.Controls.Add(LabelAt("sidebar.portable", 25, 160, 180, 24, 9, Color.FromArgb(157, 177, 204), false));
 
             var sideNav = new Panel { Location = new Point(16, 220), Size = new Size(176, 46), BackColor = Color.FromArgb(39, 60, 91) };
-            sideNav.Controls.Add(LabelAt("●   桌面图标修复", 13, 11, 155, 24, 10, Color.White, true));
+            sideNav.Controls.Add(LabelAt("sidebar.nav", 13, 11, 155, 24, 10, Color.White, true));
             sidebar.Controls.Add(sideNav);
-            sidebar.Controls.Add(LabelAt("建议按顺序尝试", 25, 299, 165, 26, 10, Color.FromArgb(193, 208, 229), true));
-            sidebar.Controls.Add(LabelAt("01  检查快捷方式\n\n02  刷新图标\n\n03  按需重建缓存", 25, 337, 169, 140, 10, Color.FromArgb(157, 177, 204), false));
+            sidebar.Controls.Add(LabelAt("sidebar.order", 25, 289, 165, 26, 10, Color.FromArgb(193, 208, 229), true));
+            sidebar.Controls.Add(LabelAt("sidebar.steps", 25, 325, 169, 106, 10, Color.FromArgb(157, 177, 204), false));
 
-            var sideBottom = new Panel { Dock = DockStyle.Bottom, Height = 173, Padding = new Padding(16), BackColor = sidebar.BackColor };
-            var restore = MakeButton("恢复快捷方式备份", false); restore.Dock = DockStyle.Top; restore.Height = 36;
+            var sideBottom = new TableLayoutPanel { Dock = DockStyle.Bottom, Height = 232, Padding = new Padding(16), BackColor = sidebar.BackColor, ColumnCount = 1, RowCount = 8 };
+            sideBottom.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            foreach (int height in new[] { 23, 32, 14, 36, 10, 36, 10, 28 }) sideBottom.RowStyles.Add(new RowStyle(SizeType.Absolute, height));
+            var languageLabel = new Label { Text = UiText.Get("language.label"), Tag = "language.label", Dock = DockStyle.Fill, ForeColor = Color.FromArgb(193, 208, 229), Margin = Padding.Empty };
+            languageSelector = new ComboBox { Name = "LanguageSelector", DropDownStyle = ComboBoxStyle.DropDownList, Dock = DockStyle.Fill, Margin = Padding.Empty, AccessibleName = UiText.Get("language.label") };
+            languageSelector.Items.AddRange(new object[] { "简体中文", "繁體中文", "English" });
+            languageSelector.SelectedIndex = (int)UiText.Language;
+            languageSelector.SelectedIndexChanged += delegate { if (!changingLanguage && languageSelector.SelectedIndex >= 0) ChangeLanguage((AppLanguage)languageSelector.SelectedIndex); };
+            actions.Add(languageSelector);
+            sideBottom.Controls.Add(languageLabel, 0, 0);
+            sideBottom.Controls.Add(languageSelector, 0, 1);
+            var restore = MakeButton("sidebar.restore", false); restore.Dock = DockStyle.Fill; restore.Margin = Padding.Empty;
             restore.Click += delegate { Restore(); };
-            var backups = MakeButton("打开备份与日志", false); backups.Dock = DockStyle.Top; backups.Height = 36;
+            var backups = MakeButton("sidebar.backups", false); backups.Dock = DockStyle.Fill; backups.Margin = Padding.Empty;
             backups.Click += delegate { OpenBackups(); };
-            var help = new LinkLabel { Text = "使用说明  ↗", LinkColor = Color.FromArgb(174, 199, 239), ActiveLinkColor = Color.White, Dock = DockStyle.Bottom, Height = 28, TextAlign = ContentAlignment.MiddleLeft };
+            var help = new LinkLabel { Text = UiText.Get("sidebar.help"), Tag = "sidebar.help", LinkColor = Color.FromArgb(174, 199, 239), ActiveLinkColor = Color.White, Dock = DockStyle.Bottom, Height = 28, TextAlign = ContentAlignment.MiddleLeft };
             help.LinkClicked += delegate { ShowHelp(); };
-            sideBottom.Controls.Add(restore);
-            sideBottom.Controls.Add(new Panel { Dock = DockStyle.Top, Height = 10 });
-            sideBottom.Controls.Add(backups);
-            sideBottom.Controls.Add(help);
+            sideBottom.Controls.Add(backups, 0, 3);
+            sideBottom.Controls.Add(restore, 0, 5);
+            sideBottom.Controls.Add(help, 0, 7);
             sidebar.Controls.Add(sideBottom);
 
             var main = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 7, Padding = new Padding(26, 23, 26, 15), Margin = Padding.Empty };
@@ -116,25 +128,26 @@ namespace DesktopIconMedic
             root.Controls.Add(main, 1, 0);
 
             var heading = new Panel { Dock = DockStyle.Fill, Margin = Padding.Empty };
-            heading.Controls.Add(LabelAt("让桌面图标恢复清晰", 0, 0, 590, 39, 23, Ink, true));
-            heading.Controls.Add(LabelAt("出现白纸图标？先检查路径，再让 Windows 重新加载图标。", 1, 49, 740, 28, 10, Muted, false));
+            heading.Controls.Add(LabelAt("heading.title", 0, 0, 720, 39, 23, Ink, true));
+            heading.Controls.Add(LabelAt("heading.subtitle", 1, 49, 740, 40, 10, Muted, false));
+            heading.SizeChanged += delegate { foreach (Control label in heading.Controls) label.Width = Math.Max(1, heading.ClientSize.Width - label.Left); };
             main.Controls.Add(heading, 0, 0);
 
             var cards = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 3, RowCount = 1, Margin = Padding.Empty };
             for (int i = 0; i < 3; i++) cards.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.333F));
             main.Controls.Add(cards, 0, 1);
-            cards.Controls.Add(ActionCard("01  检查桌面", "查找失效的目标与图标路径", "重新扫描", false, Scan), 0, 0);
-            cards.Controls.Add(ActionCard("02  刷新图标", "请求系统重新加载图标", "刷新图标", true, Refresh), 1, 0);
-            cards.Controls.Add(ActionCard("03  深度修复", "重建缓存 · 会暂时关闭桌面", "重建图标缓存…", false, Rebuild), 2, 0);
+            cards.Controls.Add(ActionCard("card.scan", "card.scanDescription", "card.rescan", false, Scan), 0, 0);
+            cards.Controls.Add(ActionCard("card.refresh", "card.refreshDescription", "card.refreshButton", true, Refresh), 1, 0);
+            cards.Controls.Add(ActionCard("card.cache", "card.cacheDescription", "card.cacheButton", false, Rebuild), 2, 0);
 
             var toolbar = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 3, RowCount = 1, Margin = Padding.Empty };
             toolbar.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-            toolbar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 150));
-            toolbar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 158));
-            countLabel = new Label { Text = "桌面快捷方式", Font = new Font(Font, FontStyle.Bold), Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft, Margin = Padding.Empty };
-            problemsOnly = new CheckBox { Text = "只看待关注项目", AutoSize = true, Anchor = AnchorStyles.Left, ForeColor = Muted };
+            toolbar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 184));
+            toolbar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 172));
+            countLabel = new Label { Text = UiText.Get("list.title"), Tag = "list.title", Font = new Font(Font, FontStyle.Bold), Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft, Margin = Padding.Empty };
+            problemsOnly = new CheckBox { Text = UiText.Get("list.filter"), Tag = "list.filter", AutoSize = true, Anchor = AnchorStyles.Left, ForeColor = Muted };
             problemsOnly.CheckedChanged += delegate { BindItems(); };
-            repairButton = MakeButton("修复勾选项", true); repairButton.Dock = DockStyle.Fill; repairButton.Margin = new Padding(0, 7, 1, 7); repairButton.Enabled = false;
+            repairButton = MakeButton("list.repair", true); repairButton.Dock = DockStyle.Fill; repairButton.Margin = new Padding(0, 7, 1, 7); repairButton.Enabled = false;
             repairButton.Click += delegate { Repair(); };
             toolbar.Controls.Add(countLabel, 0, 0); toolbar.Controls.Add(problemsOnly, 1, 0); toolbar.Controls.Add(repairButton, 2, 0);
             main.Controls.Add(toolbar, 0, 2);
@@ -146,16 +159,16 @@ namespace DesktopIconMedic
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect, EnableHeadersVisualStyles = false,
                 GridColor = Line, CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal,
                 ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.None, ColumnHeadersHeight = 35,
-                Margin = new Padding(0, 0, 0, 0), AccessibleName = "桌面快捷方式检查结果"
+                Margin = new Padding(0, 0, 0, 0), AccessibleName = UiText.Get("list.accessible")
             };
             grid.ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle { BackColor = Color.FromArgb(234, 239, 247), ForeColor = Muted, Font = new Font(Font, FontStyle.Bold), Padding = new Padding(4, 0, 4, 0), SelectionBackColor = Color.FromArgb(234, 239, 247) };
             grid.DefaultCellStyle = new DataGridViewCellStyle { ForeColor = Ink, BackColor = Color.White, SelectionBackColor = Color.FromArgb(232, 240, 255), SelectionForeColor = Ink, Padding = new Padding(4, 0, 4, 0) };
             grid.RowTemplate.Height = 39;
-            grid.Columns.Add(new DataGridViewCheckBoxColumn { Name = "Selected", HeaderText = "勾选", Width = 56, Frozen = true, SortMode = DataGridViewColumnSortMode.NotSortable });
-            grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "Name", HeaderText = "快捷方式", AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill, FillWeight = 48, ReadOnly = true });
-            grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "Status", HeaderText = "检查结果", Width = 145, ReadOnly = true, SortMode = DataGridViewColumnSortMode.NotSortable });
-            grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "Location", HeaderText = "位置", Width = 92, ReadOnly = true, SortMode = DataGridViewColumnSortMode.NotSortable });
-            grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "Target", HeaderText = "目标路径", AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill, FillWeight = 65, ReadOnly = true, SortMode = DataGridViewColumnSortMode.NotSortable });
+            grid.Columns.Add(new DataGridViewCheckBoxColumn { Name = "Selected", HeaderText = UiText.Get("column.selected"), Tag = "column.selected", Width = 56, Frozen = true, SortMode = DataGridViewColumnSortMode.NotSortable });
+            grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "Name", HeaderText = UiText.Get("column.name"), Tag = "column.name", AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill, FillWeight = 48, ReadOnly = true });
+            grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "Status", HeaderText = UiText.Get("column.status"), Tag = "column.status", Width = 183, ReadOnly = true, SortMode = DataGridViewColumnSortMode.NotSortable });
+            grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "Location", HeaderText = UiText.Get("column.location"), Tag = "column.location", Width = 128, ReadOnly = true, SortMode = DataGridViewColumnSortMode.NotSortable });
+            grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "Target", HeaderText = UiText.Get("column.target"), Tag = "column.target", AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill, FillWeight = 65, ReadOnly = true, SortMode = DataGridViewColumnSortMode.NotSortable });
             grid.CurrentCellDirtyStateChanged += delegate { if (grid.IsCurrentCellDirty) grid.CommitEdit(DataGridViewDataErrorContexts.Commit); };
             grid.CellValueChanged += delegate { if (!updatingChecks) UpdateSelection(); };
             grid.CellPainting += PaintUnavailableCheckbox;
@@ -164,18 +177,18 @@ namespace DesktopIconMedic
             main.Controls.Add(grid, 0, 3);
 
             var detail = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 2, Margin = Padding.Empty, Padding = new Padding(0, 7, 0, 0) };
-            detail.RowStyles.Add(new RowStyle(SizeType.Absolute, 22));
+            detail.RowStyles.Add(new RowStyle(SizeType.Absolute, 34));
             detail.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-            selectionLabel = new Label { Dock = DockStyle.Fill, Margin = Padding.Empty, ForeColor = Muted, Text = "支持失效图标来源与商店应用图标修复。" };
-            detailLabel = new Label { Dock = DockStyle.Fill, Margin = Padding.Empty, ForeColor = Muted, AutoEllipsis = true, Text = "选中一项查看原因，双击查看完整路径。" };
+            selectionLabel = new Label { Dock = DockStyle.Fill, Margin = Padding.Empty, ForeColor = Muted, Text = UiText.Get("list.supported"), Tag = "list.supported" };
+            detailLabel = new Label { Dock = DockStyle.Fill, Margin = Padding.Empty, ForeColor = Muted, AutoEllipsis = true, Text = UiText.Get("list.detailHint"), Tag = "list.detailHint" };
             var selectionBar = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 3, RowCount = 1, Margin = Padding.Empty };
             selectionBar.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-            selectionBar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 132));
-            selectionBar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 63));
-            selectAll = new CheckBox { Text = "全选可修复项", AutoCheck = false, AutoSize = true, Dock = DockStyle.Fill, Margin = Padding.Empty, ForeColor = Blue, AccessibleName = "全选当前列表中的可修复项目" };
+            selectionBar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 152));
+            selectionBar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 108));
+            selectAll = new CheckBox { Text = UiText.Get("list.selectAll"), Tag = "list.selectAll", AutoCheck = false, AutoSize = true, Dock = DockStyle.Fill, Margin = Padding.Empty, ForeColor = Blue, AccessibleName = UiText.Get("list.selectAllAccessible") };
             selectAll.Click += delegate { if (!updatingChecks) SetVisibleChecks(selectAll.CheckState != CheckState.Checked); };
             actions.Add(selectAll);
-            var clearSelection = new LinkLabel { Text = "取消全选", Dock = DockStyle.Fill, TextAlign = ContentAlignment.TopRight, Margin = Padding.Empty, LinkColor = Blue };
+            var clearSelection = new LinkLabel { Text = UiText.Get("list.clear"), Tag = "list.clear", Dock = DockStyle.Fill, TextAlign = ContentAlignment.TopRight, Margin = Padding.Empty, LinkColor = Blue };
             clearSelection.LinkClicked += delegate { SetVisibleChecks(false); };
             actions.Add(clearSelection);
             selectionBar.Controls.Add(selectionLabel, 0, 0); selectionBar.Controls.Add(selectAll, 1, 0); selectionBar.Controls.Add(clearSelection, 2, 0);
@@ -183,19 +196,19 @@ namespace DesktopIconMedic
             main.Controls.Add(detail, 0, 4);
 
             var logPanel = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 2, Margin = Padding.Empty };
-            logPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100)); logPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 66));
+            logPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100)); logPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 96));
             logPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 23)); logPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-            logPanel.Controls.Add(new Label { Text = "操作记录", ForeColor = Muted, Dock = DockStyle.Fill, Margin = Padding.Empty }, 0, 0);
-            var export = new LinkLabel { Text = "导出日志", LinkColor = Blue, Dock = DockStyle.Fill, Margin = Padding.Empty, TextAlign = ContentAlignment.TopRight };
+            logPanel.Controls.Add(new Label { Text = UiText.Get("log.title"), Tag = "log.title", ForeColor = Muted, Dock = DockStyle.Fill, Margin = Padding.Empty }, 0, 0);
+            var export = new LinkLabel { Text = UiText.Get("log.export"), Tag = "log.export", LinkColor = Blue, Dock = DockStyle.Fill, Margin = Padding.Empty, TextAlign = ContentAlignment.TopRight };
             export.LinkClicked += delegate { ExportLog(); };
             logPanel.Controls.Add(export, 1, 0);
-            logBox = new TextBox { Dock = DockStyle.Fill, Multiline = true, ReadOnly = true, ScrollBars = ScrollBars.Vertical, BackColor = Color.White, BorderStyle = BorderStyle.FixedSingle, ForeColor = Muted, Margin = Padding.Empty, Font = new Font("Microsoft YaHei UI", 8.5F), AccessibleName = "操作日志" };
+            logBox = new TextBox { Dock = DockStyle.Fill, Multiline = true, ReadOnly = true, ScrollBars = ScrollBars.Vertical, BackColor = Color.White, BorderStyle = BorderStyle.FixedSingle, ForeColor = Muted, Margin = Padding.Empty, Font = new Font("Microsoft YaHei UI", 8.5F), AccessibleName = UiText.Get("log.accessible") };
             logPanel.Controls.Add(logBox, 0, 1); logPanel.SetColumnSpan(logBox, 2);
             main.Controls.Add(logPanel, 0, 5);
 
             var footer = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 1, Margin = new Padding(0, 6, 0, 0) };
             footer.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100)); footer.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 108));
-            statusLabel = new Label { Text = "就绪", ForeColor = Muted, Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft, Margin = Padding.Empty };
+            statusLabel = new Label { Text = UiText.Get("operation.ready"), Tag = "operation.ready", ForeColor = Muted, Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft, Margin = Padding.Empty };
             progress = new ProgressBar { Style = ProgressBarStyle.Marquee, Dock = DockStyle.Fill, MarqueeAnimationSpeed = 30, Visible = false, Margin = new Padding(0, 5, 0, 5) };
             footer.Controls.Add(statusLabel, 0, 0); footer.Controls.Add(progress, 1, 0);
             main.Controls.Add(footer, 0, 6);
@@ -203,13 +216,13 @@ namespace DesktopIconMedic
 
         private Label LabelAt(string text, int x, int y, int w, int h, float size, Color color, bool bold)
         {
-            return new Label { Text = text, Location = new Point(x, y), Size = new Size(w, h), ForeColor = color, Font = new Font("Microsoft YaHei UI", size, bold ? FontStyle.Bold : FontStyle.Regular) };
+            return new Label { Text = UiText.Get(text), Tag = text, Location = new Point(x, y), Size = new Size(w, h), ForeColor = color, Font = new Font("Microsoft YaHei UI", size, bold ? FontStyle.Bold : FontStyle.Regular) };
         }
 
         private Button MakeButton(string text, bool primary)
         {
             var button = new Button {
-                Text = text, BackColor = primary ? Blue : Color.White, ForeColor = primary ? Color.White : Ink,
+                Text = UiText.Get(text), Tag = text, BackColor = primary ? Blue : Color.White, ForeColor = primary ? Color.White : Ink,
                 FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand, UseVisualStyleBackColor = false,
                 Font = new Font("Microsoft YaHei UI", 9F), Height = 34
             };
@@ -225,8 +238,8 @@ namespace DesktopIconMedic
             card.Paint += delegate(object sender, PaintEventArgs e) { using (var p = new Pen(Line)) e.Graphics.DrawRectangle(p, 0, 0, card.Width - 1, card.Height - 1); };
             var layout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 3, Margin = Padding.Empty };
             layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 29)); layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100)); layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 34));
-            layout.Controls.Add(new Label { Text = title, Font = new Font("Microsoft YaHei UI", 11, FontStyle.Bold), Dock = DockStyle.Fill, Margin = Padding.Empty }, 0, 0);
-            layout.Controls.Add(new Label { Text = description, ForeColor = Muted, Font = new Font("Microsoft YaHei UI", 8.5F), Dock = DockStyle.Fill, Margin = Padding.Empty }, 0, 1);
+            layout.Controls.Add(new Label { Text = UiText.Get(title), Tag = title, Font = new Font("Microsoft YaHei UI", 11, FontStyle.Bold), Dock = DockStyle.Fill, Margin = Padding.Empty }, 0, 0);
+            layout.Controls.Add(new Label { Text = UiText.Get(description), Tag = description, ForeColor = Muted, Font = new Font("Microsoft YaHei UI", 8.5F), Dock = DockStyle.Fill, Margin = Padding.Empty }, 0, 1);
             Button button = MakeButton(buttonText, primary); button.Dock = DockStyle.Fill; button.Margin = Padding.Empty;
             button.Click += delegate { action(); };
             layout.Controls.Add(button, 0, 2); card.Controls.Add(layout); return card;
@@ -236,6 +249,66 @@ namespace DesktopIconMedic
         {
             if (IsDisposed) return;
             if (InvokeRequired) Invoke(action); else action();
+        }
+
+        private static void TranslateControls(Control control)
+        {
+            string key = control.Tag as string;
+            if (key != null) control.Text = UiText.Get(key);
+            foreach (Control child in control.Controls) TranslateControls(child);
+        }
+
+        private void ChangeLanguage(AppLanguage language)
+        {
+            if (changingLanguage || language == UiText.Language) return;
+            if (busy)
+            {
+                changingLanguage = true;
+                try { languageSelector.SelectedIndex = (int)UiText.Language; }
+                finally { changingLanguage = false; }
+                return;
+            }
+            grid.EndEdit();
+            var selected = new HashSet<string>(SelectedItems().Select(item => item.Path), StringComparer.OrdinalIgnoreCase);
+            var current = grid.CurrentRow == null ? null : grid.CurrentRow.Tag as ShortcutItem;
+            int firstVisible = grid.FirstDisplayedScrollingRowIndex;
+            UiText.Code(language);
+            changingLanguage = true;
+            SuspendLayout();
+            try
+            {
+                UiText.Language = language;
+                Text = UiText.Get("app.window");
+                TranslateControls(this);
+                foreach (DataGridViewColumn column in grid.Columns) column.HeaderText = UiText.Get((string)column.Tag);
+                grid.AccessibleName = UiText.Get("list.accessible");
+                selectAll.AccessibleName = UiText.Get("list.selectAllAccessible");
+                logBox.AccessibleName = UiText.Get("log.accessible");
+                languageSelector.AccessibleName = UiText.Get("language.label");
+                languageSelector.SelectedIndex = (int)language;
+                BindItems();
+                updatingChecks = true;
+                try
+                {
+                    foreach (DataGridViewRow row in grid.Rows)
+                    {
+                        var item = (ShortcutItem)row.Tag;
+                        row.Cells[0].Value = item.CanRepair && selected.Contains(item.Path);
+                        if (current != null && Paths.Same(item.Path, current.Path)) grid.CurrentCell = row.Cells[1];
+                    }
+                }
+                finally { updatingChecks = false; }
+                if (firstVisible >= 0 && firstVisible < grid.Rows.Count) grid.FirstDisplayedScrollingRowIndex = firstVisible;
+                UpdateSelection();
+                if (grid.Rows.Count > 0) ShowDetail();
+                statusLabel.Text = UiText.Get(statusKey);
+            }
+            finally { ResumeLayout(true); changingLanguage = false; }
+            if (!preview)
+            {
+                try { LanguageSettings.Save(stateRoot, language); }
+                catch (Exception ex) { Log(UiText.Get("language.unsaved", ex.Message)); }
+            }
         }
 
         private void Run(string status, Action work, Action done)
@@ -248,15 +321,16 @@ namespace DesktopIconMedic
             var thread = new Thread(delegate() {
                 Exception failure = null;
                 try { work(); }
-                catch (Exception ex) { failure = ex; Log("操作未完成：" + ex.Message); }
+                catch (Exception ex) { failure = ex; Log(UiText.Get("app.error", ex.Message)); }
                 OnUi(delegate {
                     busy = false;
                     foreach (Control action in actions) action.Enabled = true;
                     grid.Enabled = true; problemsOnly.Enabled = true; progress.Visible = false;
-                    statusLabel.Text = failure == null ? "操作完成 · 请查看结果与桌面图标" : "操作未完成 · 请查看操作记录";
+                    statusKey = failure == null ? "operation.done" : "operation.failed";
+                    statusLabel.Text = UiText.Get(statusKey);
                     UpdateSelection();
                     if (failure == null && done != null) done();
-                    if (failure != null) MessageBox.Show(this, failure.Message, "操作未完成", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    if (failure != null) MessageBox.Show(this, failure.Message, UiText.Get("app.incomplete"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 });
             });
             thread.IsBackground = true;
@@ -281,30 +355,30 @@ namespace DesktopIconMedic
 
         private void Scan()
         {
-            Run("正在检查桌面快捷方式…", delegate {
-                Log("开始检查个人桌面和公共桌面的快捷方式。");
+            Run(UiText.Get("scan.progress"), delegate {
+                Log(UiText.Get("scan.start"));
                 List<ShortcutItem> scanned = shortcuts.ScanDesktop(Log);
                 OnUi(delegate { items = scanned; BindItems(); });
-                Log("检查完成：" + scanned.Count + " 项，" + scanned.Count(x => x.Finding == Finding.MissingIcon) + " 项图标来源失效，" + scanned.Count(x => x.Finding == Finding.PackagedIcon) + " 项可固定商店图标。请仅勾选实际显示异常的项目。");
+                Log(UiText.Get("scan.done", scanned.Count, scanned.Count(x => x.Finding == Finding.MissingIcon), scanned.Count(x => x.Finding == Finding.PackagedIcon)));
             }, null);
         }
 
         private new void Refresh()
         {
-            Run("正在请求 Windows 刷新图标…", delegate {
+            Run(UiText.Get("refresh.progress"), delegate {
                 Shell.RefreshIcons();
-                Log("已发送图标刷新请求。请等待片刻，查看桌面；若仍显示白纸，可尝试重建图标缓存。");
+                Log(UiText.Get("refresh.done"));
             }, null);
         }
 
         private void Rebuild()
         {
             if (MessageBox.Show(this,
-                "此操作将：\n\n• 暂时关闭当前登录会话的 Windows 资源管理器。\n• 先备份、再移除图标缓存，随后恢复桌面。\n\n任务栏和桌面会短暂消失，已打开的文件夹窗口可能关闭。\n请先等待文件复制 / 移动完成，并保存正在编辑的文件。\n\n现在重建图标缓存吗？", "重建图标缓存", MessageBoxButtons.OKCancel, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) != DialogResult.OK) return;
+                UiText.Get("cache.confirm"), UiText.Get("cache.title"), MessageBoxButtons.OKCancel, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) != DialogResult.OK) return;
             OperationResult result = null;
-            Run("正在重建图标缓存，请勿关闭程序…", delegate { result = cache.Rebuild(Log); }, delegate {
-                string summary = result.Succeeded == 0 && result.Failed == 0 ? "未发现可移除的缓存，已请求刷新。" : "已移除 " + result.Succeeded + " 个缓存文件，" + result.Failed + " 个未处理。";
-                MessageBox.Show(this, summary + "\n\nWindows 会自动生成新缓存。请检查桌面图标；\n若仍有白纸图标，可重启电脑，或按检查结果重新创建快捷方式。", "缓存处理完成", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            Run(UiText.Get("cache.progress"), delegate { result = cache.Rebuild(Log); }, delegate {
+                string summary = result.Succeeded == 0 && result.Failed == 0 ? UiText.Get("cache.noneSummary") : UiText.Get("cache.summary", result.Succeeded, result.Failed);
+                MessageBox.Show(this, summary + UiText.Get("cache.after"), UiText.Get("cache.completed"), MessageBoxButtons.OK, MessageBoxIcon.Information);
             });
         }
 
@@ -347,12 +421,12 @@ namespace DesktopIconMedic
             grid.EndEdit();
             List<ShortcutItem> selected = SelectedItems();
             if (selected.Count == 0) return;
-            if (MessageBox.Show(this, "将为勾选的 " + selected.Count + " 个快捷方式备份原文件，\n再使用已安装程序的原图标。商店应用图标将另存为稳定的本地文件。\n\n启动目标、参数与商店应用启动标识将保留，可在左下角恢复备份。\n继续修复吗？", "修复图标来源", MessageBoxButtons.OKCancel, MessageBoxIcon.Question) != DialogResult.OK) return;
+            if (MessageBox.Show(this, UiText.Get("repair.confirm", selected.Count), UiText.Get("repair.title"), MessageBoxButtons.OKCancel, MessageBoxIcon.Question) != DialogResult.OK) return;
             OperationResult result = null;
-            Run("正在备份并修复快捷方式…", delegate {
+            Run(UiText.Get("repair.progress"), delegate {
                 result = shortcuts.Repair(selected, Log);
                 Shell.RefreshIcons();
-                Log("快捷方式修复完成：成功 " + result.Succeeded + " 项，未修复 " + result.Failed + " 项。备份：" + result.BackupDirectory);
+                Log(UiText.Get("repair.summary", result.Succeeded, result.Failed, result.BackupDirectory));
                 List<ShortcutItem> scanned = shortcuts.ScanDesktop(Log);
                 OnUi(delegate { items = scanned; BindItems(); });
             }, null);
@@ -363,18 +437,18 @@ namespace DesktopIconMedic
             try
             {
                 List<string> folders = shortcuts.ListRestorableBackups();
-                if (folders.Count == 0) { MessageBox.Show(this, "没有待恢复的快捷方式备份。", Text); return; }
+                if (folders.Count == 0) { MessageBox.Show(this, UiText.Get("restore.none"), Text); return; }
                 string folder;
                 using (var dialog = new BackupPicker(folders)) { if (dialog.ShowDialog(this) != DialogResult.OK) return; folder = dialog.SelectedFolder; }
-                Run("正在恢复快捷方式备份…", delegate {
+                Run(UiText.Get("restore.progress"), delegate {
                     OperationResult result = shortcuts.Restore(folder, Log);
                     Shell.RefreshIcons();
-                    Log("恢复完成：成功 " + result.Succeeded + " 项，跳过 " + result.Failed + " 项。");
+                    Log(UiText.Get("restore.summary", result.Succeeded, result.Failed));
                     List<ShortcutItem> scanned = shortcuts.ScanDesktop(Log);
                     OnUi(delegate { items = scanned; BindItems(); });
                 }, null);
             }
-            catch (Exception ex) { MessageBox.Show(this, ex.Message, "无法读取备份", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
+            catch (Exception ex) { MessageBox.Show(this, ex.Message, UiText.Get("restore.readFailed"), MessageBoxButtons.OK, MessageBoxIcon.Warning); }
         }
 
         private void BindItems()
@@ -387,12 +461,12 @@ namespace DesktopIconMedic
                 row.Cells[0].ReadOnly = !item.CanRepair;
                 row.Cells[2].Style.ForeColor = item.CanRepair ? Color.FromArgb(190, 115, 10) : item.Finding == Finding.Healthy ? Color.FromArgb(34, 135, 112) : Muted;
                 foreach (DataGridViewCell cell in row.Cells) cell.ToolTipText = item.Detail;
-                row.Cells[0].ToolTipText = item.CanRepair ? "点击方框勾选，可同时勾选多项后批量修复。" : "此项暂不支持自动修复：" + item.Detail;
+                row.Cells[0].ToolTipText = item.CanRepair ? UiText.Get("list.checkHint") : UiText.Get("list.unsupported", item.Detail);
                 row.Cells[4].ToolTipText = item.Target;
             }
-            countLabel.Text = "桌面快捷方式  " + items.Count + " 项 · 可修复 " + items.Count(x => x.CanRepair) + " 项";
+            countLabel.Text = UiText.Get("list.count", items.Count, items.Count(x => x.CanRepair));
             UpdateSelection(); ShowDetail();
-            if (grid.Rows.Count == 0) detailLabel.Text = items.Count == 0 ? "未发现普通桌面快捷方式，或桌面无法读取。仍可尝试刷新图标，请同时查看操作记录。" : "当前筛选下没有待关注项目。";
+            if (grid.Rows.Count == 0) detailLabel.Text = items.Count == 0 ? UiText.Get("list.empty") : UiText.Get("list.filteredEmpty");
         }
 
         private void UpdateSelection()
@@ -400,8 +474,8 @@ namespace DesktopIconMedic
             if (grid == null || selectionLabel == null) return;
             int count = SelectedItems().Count;
             repairButton.Enabled = !busy && count > 0;
-            repairButton.Text = count > 0 ? "修复勾选项 (" + count + ")" : "修复勾选项";
-            selectionLabel.Text = count > 0 ? "已勾选 " + count + " 项 · 点击修复按钮批量处理" : "点击行首方框多选；灰色方框表示暂不支持自动修复。";
+            repairButton.Text = count > 0 ? UiText.Get("list.repairCount", count) : UiText.Get("list.repair");
+            selectionLabel.Text = count > 0 ? UiText.Get("list.selectedCount", count) : UiText.Get("list.selectionHint");
             if (selectAll != null)
             {
                 int available = grid.Rows.Cast<DataGridViewRow>().Count(r => r.Tag is ShortcutItem && ((ShortcutItem)r.Tag).CanRepair);
@@ -419,52 +493,53 @@ namespace DesktopIconMedic
         {
             if (detailLabel == null) return;
             ShortcutItem item = grid.CurrentRow == null ? null : grid.CurrentRow.Tag as ShortcutItem;
-            detailLabel.Text = item == null ? "选中一项查看原因，双击查看完整路径。" : item.Detail;
+            detailLabel.Text = item == null ? UiText.Get("list.detailHint") : item.Detail;
         }
 
         private void ShowSelectedDetails()
         {
             ShortcutItem item = grid.CurrentRow == null ? null : grid.CurrentRow.Tag as ShortcutItem;
             if (item == null) return;
-            MessageBox.Show(this, "快捷方式：" + item.Path + "\n\n目标：" + (item.Target ?? "未提供普通文件路径") + "\n\n图标来源：" + (String.IsNullOrEmpty(item.IconPath) ? "使用默认图标" : item.IconPath + "，索引 " + item.IconIndex) + "\n\n" + item.Detail, item.Name + " · " + item.Status, MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show(this, UiText.Get("detail.dialog", item.Path, item.Target ?? UiText.Get("detail.noTarget"), String.IsNullOrEmpty(item.IconPath) ? UiText.Get("detail.defaultIcon") : UiText.Get("detail.iconIndex", item.IconPath, item.IconIndex), item.Detail), item.Name + " · " + item.Status, MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         private void OpenBackups()
         {
             try { Paths.RejectReparsePoints(stateRoot); Directory.CreateDirectory(stateRoot); Process.Start(new ProcessStartInfo { FileName = stateRoot, UseShellExecute = true }); }
-            catch (Exception ex) { MessageBox.Show(this, ex.Message, "无法打开目录"); }
+            catch (Exception ex) { MessageBox.Show(this, ex.Message, UiText.Get("backups.openFailed")); }
         }
 
         private void ExportLog()
         {
-            using (var dialog = new SaveFileDialog { Filter = "文本日志 (*.txt)|*.txt", FileName = "图标修复记录_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".txt" })
+            using (var dialog = new SaveFileDialog { Filter = UiText.Get("log.filter"), FileName = UiText.Get("log.filePrefix") + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".txt" })
             {
                 if (dialog.ShowDialog(this) != DialogResult.OK) return;
                 try { File.WriteAllText(dialog.FileName, fullLog.ToString(), Encoding.UTF8); }
-                catch (Exception ex) { MessageBox.Show(this, ex.Message, "日志导出失败"); }
+                catch (Exception ex) { MessageBox.Show(this, ex.Message, UiText.Get("log.exportFailed")); }
             }
         }
 
         private void ShowHelp()
         {
             MessageBox.Show(this,
-                "推荐顺序\n\n1. 检查桌面：查看目标文件和图标来源是否可用。\n2. 刷新图标：通常适合路径正常但图标显示异常的情况。\n3. 重建缓存：刷新无效时使用；会暂时关闭资源管理器。\n4. 点击行首方框，可同时勾选多项后批量修复。\n5. 全选可修复项：选择当前列表中支持修复的项目。\n\n灰色方框表示暂不支持自动修复，可选中该行查看原因。\n商店图标从已安装应用中提取，原启动方式保留。\n请保留数据目录中的 Icons 文件夹，它保存修复后的图标。\n公共桌面可能需要管理员权限。\n\n备份与日志保存于：\n" + stateRoot + "\n\n版本 1.2.0 · 无需安装 · 无联网或自动启动功能", "使用说明", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                UiText.Get("help.body", stateRoot), UiText.Get("help.title"), MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         private void LoadPreview()
         {
             items = new List<ShortcutItem> {
-                new ShortcutItem { Path = @"C:\Demo\图像编辑器.lnk", Location = "个人桌面", Target = @"C:\Apps\PhotoEditor\PhotoEditor.exe", Finding = Finding.MissingIcon, Detail = "原图标文件不存在，可改用启动程序自身的图标。修复前会备份快捷方式。" },
-                new ShortcutItem { Path = @"C:\Demo\ChatGPT.lnk", Location = "个人桌面", Target = "商店应用 · ChatGPT", Finding = Finding.PackagedIcon, Detail = "如图标显示白纸，可勾选固定原图标，并保留原启动方式。" },
-                new ShortcutItem { Path = @"C:\Demo\Claude.lnk", Location = "个人桌面", Target = "商店应用 · Claude", Finding = Finding.PackagedIcon, Detail = "如图标显示白纸，可与其他项目一起勾选，批量固定原图标。" },
-                new ShortcutItem { Path = @"C:\Demo\笔记工具.lnk", Location = "个人桌面", Target = @"D:\Tools\Notes\Notes.exe", Finding = Finding.MissingTarget, Detail = "目标文件当前不可用，请确认软件仍已安装。" },
-                new ShortcutItem { Path = @"C:\Demo\浏览器.lnk", Location = "公共桌面", Target = @"C:\Program Files\Browser\browser.exe", Finding = Finding.Healthy, Detail = "路径未发现异常；如仍显示白纸，可尝试刷新图标。" },
-                new ShortcutItem { Path = @"C:\Demo\代码编辑器.lnk", Location = "个人桌面", Target = @"C:\Apps\Editor\Editor.exe", Finding = Finding.Healthy, Detail = "路径未发现异常；如仍显示白纸，可尝试刷新图标。" },
-                new ShortcutItem { Path = @"C:\Demo\应用商店.lnk", Location = "个人桌面", Finding = Finding.Special, Detail = "系统或商店应用，可尝试刷新图标。" }
+                new ShortcutItem { Path = @"C:\Demo\Photo Editor.lnk", LocationKey = "location.personal", Target = @"C:\Apps\PhotoEditor\PhotoEditor.exe", Finding = Finding.MissingIcon, DetailKey = "detail.missingIcon" },
+                new ShortcutItem { Path = @"C:\Demo\ChatGPT.lnk", LocationKey = "location.personal", Target = "ChatGPT", Finding = Finding.PackagedIcon, DetailKey = "preview.pin" },
+                new ShortcutItem { Path = @"C:\Demo\Claude.lnk", LocationKey = "location.personal", Target = "Claude", Finding = Finding.PackagedIcon, DetailKey = "preview.batch" },
+                new ShortcutItem { Path = @"C:\Demo\Notes.lnk", LocationKey = "location.personal", Target = @"D:\Tools\Notes\Notes.exe", Finding = Finding.MissingTarget, DetailKey = "preview.missing" },
+                new ShortcutItem { Path = @"C:\Demo\Browser.lnk", LocationKey = "location.public", Target = @"C:\Program Files\Browser\browser.exe", Finding = Finding.Healthy, DetailKey = "preview.healthy" },
+                new ShortcutItem { Path = @"C:\Demo\Code Editor.lnk", LocationKey = "location.personal", Target = @"C:\Apps\Editor\Editor.exe", Finding = Finding.Healthy, DetailKey = "preview.healthy" },
+                new ShortcutItem { Path = @"C:\Demo\Store.lnk", LocationKey = "location.personal", Finding = Finding.Special, DetailKey = "preview.special" }
             };
             BindItems();
-            Log("界面预览 · 以上为演示数据，未读取或修改真实桌面。");
-            statusLabel.Text = "预览模式 · 演示数据";
+            Log(UiText.Get("preview.log"));
+            statusKey = "preview.status";
+            statusLabel.Text = UiText.Get(statusKey);
         }
     }
 
@@ -476,17 +551,17 @@ namespace DesktopIconMedic
         public BackupPicker(List<string> folders)
         {
             this.folders = folders;
-            Text = "选择要恢复的快捷方式备份"; Font = new Font("Microsoft YaHei UI", 9F);
+            Text = UiText.Get("picker.title"); Font = new Font("Microsoft YaHei UI", 9F);
             StartPosition = FormStartPosition.CenterParent; ClientSize = new Size(610, 305);
             FormBorderStyle = FormBorderStyle.FixedDialog; MaximizeBox = false; MinimizeBox = false;
             AutoScaleMode = AutoScaleMode.Dpi;
-            var label = new Label { Text = "选择一次修复记录。修复后又被改动或删除的快捷方式将跳过。", Dock = DockStyle.Top, Height = 49, Padding = new Padding(12), AutoSize = false };
+            var label = new Label { Text = UiText.Get("picker.description"), Tag = "picker.description", Dock = DockStyle.Top, Height = 49, Padding = new Padding(12), AutoSize = false };
             list = new ListBox { Dock = DockStyle.Fill, IntegralHeight = false };
             foreach (string folder in folders) list.Items.Add(Path.GetFileName(folder));
             list.SelectedIndex = 0;
             var buttons = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 54, Padding = new Padding(8), FlowDirection = FlowDirection.RightToLeft };
-            var cancel = new Button { Text = "取消", DialogResult = DialogResult.Cancel, Size = new Size(90, 32) };
-            var ok = new Button { Text = "恢复此备份", DialogResult = DialogResult.OK, Size = new Size(115, 32) };
+            var cancel = new Button { Text = UiText.Get("picker.cancel"), Tag = "picker.cancel", DialogResult = DialogResult.Cancel, Size = new Size(90, 32) };
+            var ok = new Button { Text = UiText.Get("picker.restore"), Tag = "picker.restore", DialogResult = DialogResult.OK, Size = new Size(115, 32) };
             buttons.Controls.Add(cancel); buttons.Controls.Add(ok);
             Controls.Add(list); Controls.Add(label); Controls.Add(buttons); AcceptButton = ok; CancelButton = cancel;
         }

@@ -11,12 +11,23 @@ namespace DesktopIconMedic
     {
         public string Path { get; set; }
         public string Name { get { return System.IO.Path.GetFileNameWithoutExtension(Path); } }
-        public string Location { get; set; }
+        private string location, detail;
+        public string LocationKey { get; set; }
+        public string DetailKey { get; set; }
+        public string Location
+        {
+            get { return LocationKey == null ? location : UiText.Get(LocationKey); }
+            set { location = value; LocationKey = null; }
+        }
         public string Target { get; set; }
         public string IconPath { get; set; }
         public int IconIndex { get; set; }
         public Finding Finding { get; set; }
-        public string Detail { get; set; }
+        public string Detail
+        {
+            get { return DetailKey == null ? detail : UiText.Get(DetailKey); }
+            set { detail = value; DetailKey = null; }
+        }
         public string SourceHash { get; set; }
         public string PackagedAppId { get; set; }
         public string PackagedIconSource { get; set; }
@@ -27,13 +38,13 @@ namespace DesktopIconMedic
             {
                 switch (Finding)
                 {
-                    case Finding.Healthy: return "路径正常";
-                    case Finding.MissingIcon: return "图标来源失效";
-                    case Finding.PackagedIcon: return "可固定商店图标";
-                    case Finding.MissingTarget: return "目标不可用";
-                    case Finding.Special: return "特殊快捷方式";
-                    case Finding.Unavailable: return "需联网检查";
-                    default: return "无法读取";
+                    case Finding.Healthy: return UiText.Get("status.healthy");
+                    case Finding.MissingIcon: return UiText.Get("status.missingIcon");
+                    case Finding.PackagedIcon: return UiText.Get("status.packaged");
+                    case Finding.MissingTarget: return UiText.Get("status.missingTarget");
+                    case Finding.Special: return UiText.Get("status.special");
+                    case Finding.Unavailable: return UiText.Get("status.remote");
+                    default: return UiText.Get("status.error");
                 }
             }
         }
@@ -97,7 +108,7 @@ namespace DesktopIconMedic
             {
                 if ((File.Exists(current) || Directory.Exists(current)) &&
                     (File.GetAttributes(current) & FileAttributes.ReparsePoint) != 0)
-                    throw new IOException("路径含链接或重解析点，已跳过：" + current);
+                    throw new IOException(UiText.Get("error.reparse", current));
                 current = System.IO.Path.GetDirectoryName(current);
             }
         }

@@ -5,12 +5,12 @@ using System.Windows.Forms;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
-[assembly: AssemblyTitle("桌面图标修复助手")]
-[assembly: AssemblyDescription("Windows 11 桌面快捷方式检查与图标缓存修复")]
+[assembly: AssemblyTitle("Desktop Icon Medic")]
+[assembly: AssemblyDescription("Windows desktop shortcut and icon cache repair")]
 [assembly: AssemblyCompany("Desktop Icon Medic")]
-[assembly: AssemblyProduct("桌面图标修复助手")]
-[assembly: AssemblyVersion("1.2.0.0")]
-[assembly: AssemblyFileVersion("1.2.0.0")]
+[assembly: AssemblyProduct("Desktop Icon Medic")]
+[assembly: AssemblyVersion("1.3.0.0")]
+[assembly: AssemblyFileVersion("1.3.0.0")]
 
 namespace DesktopIconMedic
 {
@@ -28,14 +28,15 @@ namespace DesktopIconMedic
                 catch { }
                 return;
             }
+            UiText.Language = LanguageSettings.Load(StateRoot);
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             bool first;
             using (var mutex = new Mutex(true, @"Local\DesktopIconMedic.UI", out first))
             {
-                if (!first) { MessageBox.Show("图标修复助手已经打开，请查看任务栏。", "桌面图标修复助手"); return; }
+                if (!first) { MessageBox.Show(UiText.Get("app.alreadyOpen"), UiText.Get("app.title")); return; }
                 Application.ThreadException += delegate(object sender, ThreadExceptionEventArgs e) {
-                    MessageBox.Show("操作未完成：" + e.Exception.Message, "桌面图标修复助手", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show(UiText.Get("app.error", e.Exception.Message), UiText.Get("app.title"), MessageBoxButtons.OK, MessageBoxIcon.Error);
                 };
                 Application.Run(new MainForm(StateRoot, false));
             }

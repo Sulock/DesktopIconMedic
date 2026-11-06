@@ -4,6 +4,8 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Globalization;
+using System.Text.RegularExpressions;
 using System.Windows.Forms;
 using DesktopIconMedic;
 
@@ -47,6 +49,13 @@ internal static class Tests
         Check("Packaged logo lookup confines assets and chooses the high-resolution logo", PackageLogoSelection);
         Check("Checkbox multi-selection, select-all and deselection preserve eligibility", MultiSelection);
         Check("Batch repair and restore operate on all selected shortcuts", BatchRoundTrip);
+        Check("First-run language follows Windows, including regional Chinese variants", SystemLanguage);
+        Check("Language preferences survive restart and invalid settings fall back to Windows", SavedLanguage);
+        Check("All translations preserve their formatting arguments", TranslationFormats);
+        Check("Language switching preserves selection, filtering, focused row and logs", LiveLanguageSwitch);
+        Check("Language cannot change during an active operation", BusyLanguageSwitch);
+        Check("Scan details and repair diagnostics use the selected language", LocalizedDiagnostics);
+        Check("All three language layouts render with the language selector", LanguagePreviews);
         Check(visiblePreview ? "Visible UI preview renders using demo data" : "UI layout initializes using demo data", Preview);
         string summary = passed + " passed, " + failed + " failed";
         Console.WriteLine(summary);
@@ -401,5 +410,188 @@ internal static class Tests
         Assert(repaired.Succeeded == 3 && repaired.Failed == 0, "Batch did not repair all selections");
         var restored = service.Restore(repaired.BackupDirectory, Ignore);
         Assert(restored.Succeeded == 3 && restored.Failed == 0 && before.All(x => Paths.Hash(x.Key) == x.Value), "Batch restore not byte-identical");
+    }
+
+    private static void SystemLanguage()
+    {
+        foreach (string name in new[] { "zh-CN", "zh-SG", "zh-Hans" })
+            Assert(UiText.ForCulture(CultureInfo.GetCultureInfo(name)) == AppLanguage.SimplifiedChinese, name);
+        foreach (string name in new[] { "zh-TW", "zh-HK", "zh-MO", "zh-Hant" })
+            Assert(UiText.ForCulture(CultureInfo.GetCultureInfo(name)) == AppLanguage.TraditionalChinese, name);
+        foreach (string name in new[] { "en-US", "en-GB", "de-DE", "ja-JP" })
+            Assert(UiText.ForCulture(CultureInfo.GetCultureInfo(name)) == AppLanguage.English, name);
+    }
+
+    private static void SavedLanguage()
+    {
+        AppLanguage original = UiText.Language;
+        string folder = Path.Combine(Folder("language-settings"), "state");
+        try
+        {
+            Assert(LanguageSettings.Load(folder, CultureInfo.GetCultureInfo("zh-TW")) == AppLanguage.TraditionalChinese && !Directory.Exists(folder), "First run wrote state or ignored Windows language");
+            UiText.Language = AppLanguage.SimplifiedChinese;
+            using (var form = new MainForm(folder, false))
+            {
+                PrepareControls(form);
+                ((ComboBox)GetField(form, "languageSelector")).SelectedIndex = (int)AppLanguage.English;
+                Assert(LanguageSettings.Load(folder, CultureInfo.GetCultureInfo("zh-CN")) == AppLanguage.English, "UI choice was not saved");
+            }
+            UiText.Language = LanguageSettings.Load(folder);
+            using (var reopened = new MainForm(folder, false))
+                Assert(((ComboBox)GetField(reopened, "languageSelector")).SelectedIndex == (int)AppLanguage.English, "Saved choice was not restored at startup");
+            LanguageSettings.Save(folder, AppLanguage.TraditionalChinese);
+            Assert(LanguageSettings.Load(folder, CultureInfo.GetCultureInfo("en-US")) == AppLanguage.TraditionalChinese, "Existing preference was not replaced");
+            File.WriteAllText(Path.Combine(folder, "settings.json"), "{\"language\":\"unknown\"}");
+            Assert(LanguageSettings.Load(folder, CultureInfo.GetCultureInfo("zh-CN")) == AppLanguage.SimplifiedChinese, "Unknown preference did not fall back");
+            File.WriteAllText(Path.Combine(folder, "settings.json"), "invalid JSON");
+            Assert(LanguageSettings.Load(folder, CultureInfo.GetCultureInfo("en-US")) == AppLanguage.English, "Corrupt preference blocked startup");
+        }
+        finally { UiText.Language = original; }
+    }
+
+    private static void TranslationFormats()
+    {
+        AppLanguage original = UiText.Language;
+        try
+        {
+            foreach (string key in UiText.Keys)
+            {
+                string expected = null;
+                foreach (AppLanguage language in Enum.GetValues(typeof(AppLanguage)))
+                {
+                    UiText.Language = language;
+                    string value = UiText.Get(key);
+                    Assert(!String.IsNullOrWhiteSpace(value), "Missing translation: " + key);
+                    string placeholders = String.Join(",", Regex.Matches(value, @"\{\d+\}").Cast<Match>().Select(m => m.Value).OrderBy(s => s));
+                    if (expected == null) expected = placeholders;
+                    Assert(placeholders == expected, "Formatting arguments differ: " + key + " / " + language);
+                    UiText.Get(key, 0, 1, 2, 3);
+                }
+            }
+        }
+        finally { UiText.Language = original; }
+    }
+
+    private static void LiveLanguageSwitch()
+    {
+        AppLanguage original = UiText.Language;
+        string state = Path.Combine(root, "language-preview-state");
+        try
+        {
+            UiText.Language = AppLanguage.SimplifiedChinese;
+            using (var form = new MainForm(state, true))
+            {
+                PrepareControls(form);
+                var grid = (DataGridView)GetField(form, "grid");
+                var filter = (CheckBox)GetField(form, "problemsOnly");
+                var selector = (ComboBox)GetField(form, "languageSelector");
+                filter.Checked = true;
+                grid.Rows[0].Cells[0].Value = true;
+                grid.Rows[1].Cells[0].Value = true;
+                grid.CurrentCell = grid.Rows[1].Cells[1];
+                string selectedPath = ((ShortcutItem)grid.Rows[1].Tag).Path;
+                string log = ((TextBox)GetField(form, "logBox")).Text;
+                int count = grid.Rows.Count;
+                foreach (AppLanguage language in new[] { AppLanguage.English, AppLanguage.TraditionalChinese, AppLanguage.SimplifiedChinese })
+                {
+                    selector.SelectedIndex = (int)language;
+                    Assert(UiText.Language == language && form.Text == UiText.Get("app.window"), "Window language did not change");
+                    Assert(filter.Checked && grid.Rows.Count == count, "Filter changed during language switching");
+                    Assert(grid.Rows.Cast<DataGridViewRow>().Count(r => (bool)r.Cells[0].Value) == 2, "Selection was lost");
+                    Assert(((ShortcutItem)grid.CurrentRow.Tag).Path == selectedPath, "Focused shortcut changed");
+                    Assert(((Button)GetField(form, "repairButton")).Text == UiText.Get("list.repairCount", 2), "Repair caption did not update");
+                    Assert(grid.Columns[1].HeaderText == UiText.Get("column.name"), "Column caption did not update");
+                    Assert((string)grid.Rows[0].Cells[2].Value == UiText.Get("status.missingIcon"), "Existing scan status did not update");
+                    Assert((string)grid.Rows[0].Cells[3].Value == UiText.Get("location.personal"), "Existing scan location did not update");
+                    Assert(grid.Rows[0].Cells[1].ToolTipText == UiText.Get("detail.missingIcon"), "Existing scan explanation did not update");
+                    Assert(((TextBox)GetField(form, "logBox")).Text == log, "Historical log text changed");
+                }
+                Assert(!Directory.Exists(state), "Preview saved a real preference");
+            }
+        }
+        finally { UiText.Language = original; }
+    }
+
+    private static void BusyLanguageSwitch()
+    {
+        AppLanguage original = UiText.Language;
+        try
+        {
+            UiText.Language = AppLanguage.SimplifiedChinese;
+            using (var form = new MainForm(Path.Combine(root, "language-busy-state"), true))
+            {
+                var selector = (ComboBox)GetField(form, "languageSelector");
+                typeof(MainForm).GetField("busy", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(form, true);
+                selector.SelectedIndex = (int)AppLanguage.English;
+                Assert(UiText.Language == AppLanguage.SimplifiedChinese && selector.SelectedIndex == 0, "Language changed during an operation");
+            }
+        }
+        finally { UiText.Language = original; }
+    }
+
+    private static void LocalizedDiagnostics()
+    {
+        AppLanguage original = UiText.Language;
+        try
+        {
+            string folder = Folder("language-diagnostics"), path = Broken(folder);
+            var service = new ShortcutService(Path.Combine(folder, "state"));
+            UiText.Language = AppLanguage.SimplifiedChinese;
+            var item = service.Inspect(path, "Test");
+            string before = Paths.Hash(path);
+            foreach (AppLanguage language in Enum.GetValues(typeof(AppLanguage)))
+            {
+                UiText.Language = language;
+                Assert(item.Detail == UiText.Get("detail.missingIcon"), "Stored scan details kept the old language");
+                Assert(Paths.Hash(path) == before, "Changing language edited a shortcut");
+            }
+            Shell.ChangeIcon(path, exe);
+            var log = new List<string>();
+            UiText.Language = AppLanguage.English;
+            var result = service.Repair(new[] { item }, log.Add);
+            Assert(result.Failed == 1 && log.Any(line => line.Contains(UiText.Get("error.changedAfterScan"))), "Repair error did not use English");
+        }
+        finally { UiText.Language = original; }
+    }
+
+    private static void LanguagePreviews()
+    {
+        AppLanguage original = UiText.Language;
+        try
+        {
+            foreach (AppLanguage language in Enum.GetValues(typeof(AppLanguage)))
+            {
+                UiText.Language = language;
+                using (var form = new MainForm(Path.Combine(root, "language-render-state"), true))
+                {
+                    PrepareControls(form);
+                    if (visiblePreview) { form.Show(); Application.DoEvents(); }
+                    var selector = (ComboBox)GetField(form, "languageSelector");
+                    Assert(selector.Items.Count == 3 && selector.SelectedIndex == (int)language, "Language selector is incomplete");
+                    Assert(selector.Width > 100 && selector.Height > 20, "Language selector is clipped");
+                    var grid = (DataGridView)GetField(form, "grid");
+                    grid.Rows[0].Cells[0].Value = true;
+                    grid.Rows[1].Cells[0].Value = true;
+                    SaveLanguagePreview(form, "preview-" + UiText.Code(language) + ".png");
+                    if (language == AppLanguage.English)
+                    {
+                        form.Size = form.MinimumSize;
+                        form.PerformLayout();
+                        if (visiblePreview) Application.DoEvents();
+                        SaveLanguagePreview(form, "preview-en-small.png");
+                    }
+                }
+            }
+        }
+        finally { UiText.Language = original; }
+    }
+
+    private static void SaveLanguagePreview(Form form, string filename)
+    {
+        using (var bitmap = new Bitmap(form.Width, form.Height))
+        {
+            form.DrawToBitmap(bitmap, new Rectangle(Point.Empty, form.Size));
+            bitmap.Save(Path.Combine(root, filename), System.Drawing.Imaging.ImageFormat.Png);
+        }
     }
 }

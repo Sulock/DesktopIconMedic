@@ -62,7 +62,7 @@ namespace DesktopIconMedic
             List<string> candidates = GetCandidates();
             if (candidates.Count == 0)
             {
-                log("未发现可重建的图标缓存文件，已发送图标刷新请求。");
+                log(UiText.Get("cache.none"));
                 desktop.RefreshIcons();
                 return result;
             }
@@ -76,7 +76,7 @@ namespace DesktopIconMedic
                 // Launch recovery before stopping Explorer so an unexpected app exit cannot strand the desktop.
                 desktop.StartRecovery(marker);
                 watchdogStarted = true;
-                log("正在暂时关闭当前登录会话的资源管理器……");
+                log(UiText.Get("cache.pause"));
                 desktop.PauseExplorer();
                 for (int i = 0; i < candidates.Count; i++)
                 {
@@ -84,21 +84,21 @@ namespace DesktopIconMedic
                     try
                     {
                         // Revalidate the exact filename and all path components immediately before deletion.
-                        if (!IsAllowedCache(path)) throw new IOException("路径不在允许的缓存范围内。");
+                        if (!IsAllowedCache(path)) throw new IOException(UiText.Get("error.cacheOutside"));
                         Paths.RejectReparsePoints(path);
-                        if (!File.Exists(path)) { log("缓存已由系统更新：" + Path.GetFileName(path)); continue; }
+                        if (!File.Exists(path)) { log(UiText.Get("cache.alreadyChanged", Path.GetFileName(path))); continue; }
                         string saved = Path.Combine(folder, i.ToString("D3") + "_" + Path.GetFileName(path));
                         File.Copy(path, saved, false);
-                        if (Paths.Hash(path) != Paths.Hash(saved)) throw new IOException("缓存备份校验失败。");
+                        if (Paths.Hash(path) != Paths.Hash(saved)) throw new IOException(UiText.Get("error.cacheBackup"));
                         File.AppendAllText(Path.Combine(folder, "files.txt"), saved + "\t" + path + Environment.NewLine);
                         File.Delete(path);
                         result.Succeeded++;
-                        log("已移除缓存，等待系统重建：" + Path.GetFileName(path));
+                        log(UiText.Get("cache.removed", Path.GetFileName(path)));
                     }
                     catch (Exception ex)
                     {
                         result.Failed++;
-                        log("保留 " + Path.GetFileName(path) + "：" + ex.Message);
+                        log(UiText.Get("cache.kept", Path.GetFileName(path), ex.Message));
                     }
                 }
             }
@@ -107,8 +107,8 @@ namespace DesktopIconMedic
                 bool desktopReady = false;
                 if (watchdogStarted)
                 {
-                    try { desktop.ResumeExplorer(); desktopReady = true; log("资源管理器已运行；图标会逐步重新加载。"); }
-                    catch (Exception ex) { throw new IOException("自动恢复桌面失败：" + ex.Message + "。恢复保护会继续尝试。也可用 Ctrl + Shift + Esc 打开任务管理器，运行 explorer.exe。", ex); }
+                    try { desktop.ResumeExplorer(); desktopReady = true; log(UiText.Get("cache.resumed")); }
+                    catch (Exception ex) { throw new IOException(UiText.Get("cache.resumeFailed", ex.Message), ex); }
                 }
                 if (!watchdogStarted || desktopReady)
                 {
@@ -116,7 +116,7 @@ namespace DesktopIconMedic
                 }
             }
             desktop.RefreshIcons();
-            if (result.Failed > 0) log("部分缓存仍被系统占用。如图标未恢复，请重启电脑后再试。");
+            if (result.Failed > 0) log(UiText.Get("cache.partial"));
             return result;
         }
 
@@ -151,7 +151,7 @@ namespace DesktopIconMedic
                 foreach (Process p in running) p.Dispose();
                 if (exists) return;
             }
-            throw new IOException("尚未检测到资源管理器进程。");
+            throw new IOException(UiText.Get("error.explorerMissing"));
         }
 
         public static void RunRecovery(int parentId, string marker, string stateRoot)
@@ -184,7 +184,7 @@ namespace DesktopIconMedic
                     UseShellExecute = false, CreateNoWindow = true, WindowStyle = ProcessWindowStyle.Hidden
                 }))
                 {
-                    if (recovery == null || recovery.WaitForExit(250)) throw new IOException("桌面恢复保护未能启动，已取消重建。");
+                    if (recovery == null || recovery.WaitForExit(250)) throw new IOException(UiText.Get("error.recoveryStart"));
                 }
             }
 
@@ -197,7 +197,7 @@ namespace DesktopIconMedic
                         try
                         {
                             process.Kill();
-                            if (!process.WaitForExit(5000)) throw new IOException("资源管理器未及时退出。");
+                            if (!process.WaitForExit(5000)) throw new IOException(UiText.Get("error.explorerExit"));
                         }
                         catch (InvalidOperationException) { }
                     }
